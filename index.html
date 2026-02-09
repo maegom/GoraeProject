@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>GoreIeum - 가변 포스트 난간 시뮬레이터 (v2.2)</title>
+    <style>
+        body { margin: 0; display: flex; font-family: 'Pretendard', sans-serif; background: #f8f9fa; color: #333; }
+        #sidebar { width: 320px; padding: 25px; background: #ffffff; height: 100vh; overflow-y: auto; box-shadow: 2px 0 15px rgba(0,0,0,0.05); z-index: 100; }
+        #canvas-container { flex-grow: 1; position: relative; background: #eee; }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; font-size: 13px; color: #555; margin-bottom: 8px; font-weight: 600; }
+        input { width: 100%; padding: 12px; border: 1px solid #e0e0e0; border-radius: 6px; box-sizing: border-box; transition: border 0.2s; font-size: 14px; }
+        input:focus { border-color: #007bff; outline: none; }
+        h2 { font-size: 20px; margin-bottom: 25px; color: #1a1a1a; border-bottom: 3px solid #007bff; padding-bottom: 10px; display: inline-block; }
+        .loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; z-index: 200; visibility: hidden; font-weight: bold; }
+        .info-box { font-size: 11px; color: #888; line-height: 1.6; background: #f1f3f5; padding: 10px; border-radius: 6px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div id="sidebar">
+    <h2>GoreIeum Modeler</h2>
+    <div class="input-group">
+        <label>전체 길이 (mm)</label>
+        <input type="number" id="totalL" value="3000">
+    </div>
+    <div class="input-group">
+        <label>포스트(기둥) 간격 (mm)</label>
+        <input type="number" id="postInt" value="1000">
+    </div>
+    <div class="input-group">
+        <label>살(파이프) 간격 (mm)</label>
+        <input type="number" id="picketGap" value="120">
+    </div>
+    <div class="input-group">
+        <label>난간 높이 (mm)</label>
+        <input type="number" id="height" value="1200">
+    </div>
+    <div class="input-group">
+        <label>평철 폭 / 두께 (mm)</label>
+        <div style="display:flex; gap:8px;">
+            <input type="number" id="barW" value="50" title="평철 폭">
+            <input type="number" id="barT" value="9" title="평철 두께">
+        </div>
+    </div>
+    <div class="info-box">
+        * 사람 모델: <b>1/100 스케일</b> 적용<br>
+        * 구조: 살 2개 일체형 포스트 및 ㅗ형 받침 적용<br>
+        * 수치 변경 시 실시간으로 모델링이 업데이트됩니다.
+    </div>
+</div>
+
+<div id="canvas-container">
+    <div id="loading" class="loading-overlay">모델 데이터를 불러오는 중...</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+<script>
+    let scene, camera, renderer, controls, railingGroup, humanModel;
+
+    function init() {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf1f3f5);
+
+        camera = new THREE.PerspectiveCamera(45, (window.innerWidth - 320) / window.innerHeight, 10, 50000);
+        camera.position.set(2500, 1500, 3000);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth - 320, window.innerHeight);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        
+        // 조명 설정 (언리얼 시각화 스타일)
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
+        scene.add(hemiLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(2000, 4000, 2000);
+        scene.add(dirLight);
+
+        // 그리드 보조선
+        const grid = new THREE.GridHelper(10000, 50, 0xd1d1d1, 0xe1e1e1);
+        scene.add(grid);
+
+        railingGroup = new THREE.Group();
+        scene.add(railingGroup);
+
+        loadHuman(); // 사람 모델 로딩 (1/100 스케일)
+        renderRailing(); // 난간 생성 로직 실행
+    }
+
+   function loadHuman() {
+        const loader = new THREE.GLTFLoader();
+        const loadingScreen = document.getElementById('loading');
+        loadingScreen.style.visibility = 'visible';
+
+        const rawUrl = 'https://dl.dropboxusercontent.com/scl/fi/y395rlm5m9mhu67b52g15/SampleHuman.glb?rlkey=idzzqtoc993laykunl3ey7oyx';
+
+        loader.load(rawUrl, (gltf) => {
+            humanModel = gltf.scene;
+            
+            // [1] 크기 수정: 난간 1000mm 대비 적절한 성인 남성 크기 (기존 10 -> 17.5로 변경)
+            // 이 수치가 커질수록 사람이 커집니다.
+            humanModel.scale.set(25, 25, 25); 
+            
+            // [2] 위치 수정: (X축, Y축, Z축)
+            // X: -600 (왼쪽으로 60cm), Y: 0 (바닥 고정), Z: 500 (앞으로 50cm)
+            humanModel.position.set(300, 0, -500); 
+
+            // [3] 회전 수정: 사람이 난간을 바라보는 각도 (라디안 단위)
+            humanModel.rotation.y = Math.PI / 4; 
+
+            scene.add(humanModel);
+            loadingScreen.style.visibility = 'hidden';
+        }, 
+        (xhr) => {
+            const percent = Math.round((xhr.loaded / xhr.total) * 100);
+            loadingScreen.innerText = `모델 로딩 중... (${percent}%)`;
+        }, 
+        (error) => {
+            console.error('모델 로드 실패:', error);
+            loadingScreen.innerText = '사람 모델 로드 실패';
+        });
+    }
+    function createMesh(geom, color) {
+        const mat = new THREE.MeshStandardMaterial({ 
+            color, 
+            metalness: 0.6, 
+            roughness: 0.3 
+        });
+        return new THREE.Mesh(geom, mat);
+    }
+
+    function renderRailing() {
+        // 기존 객체 삭제
+        while(railingGroup.children.length > 0) railingGroup.remove(railingGroup.children[0]);
+
+        // 입력값 읽기 및 기본값 처리
+        const L = Math.max(100, parseFloat(document.getElementById('totalL').value) || 3000);
+        const pInt = Math.max(100, parseFloat(document.getElementById('postInt').value) || 1000);
+        const pGap = Math.max(10, parseFloat(document.getElementById('picketGap').value) || 120);
+        const bW = parseFloat(document.getElementById('barW').value) || 50;
+        const bT = parseFloat(document.getElementById('barT').value) || 9;
+        const H = parseFloat(document.getElementById('height').value) || 1100;
+        
+        const ground = 60; // 바닥 띄움 (ㅗ형 받침 높이)
+        const pipeD = 20;  // 파이프 외경
+
+        const numSections = Math.max(1, Math.round(L / pInt));
+        const actualInterval = L / numSections;
+
+        for (let i = 0; i <= numSections; i++) {
+            const posX = i * actualInterval;
+            const picketH = H - ground - (bT * 2);
+            const picketY = ground + bT + (picketH/2);
+
+            // --- 포스트 (살 2개가 나란히 붙어 패턴을 유지) ---
+            const p1 = createMesh(new THREE.CylinderGeometry(pipeD/2, pipeD/2, picketH, 16), 0x888888);
+            p1.position.set(posX - pGap/2, picketY, 0);
+            railingGroup.add(p1);
+
+            const p2 = createMesh(new THREE.CylinderGeometry(pipeD/2, pipeD/2, picketH, 16), 0x888888);
+            p2.position.set(posX + pGap/2, picketY, 0);
+            railingGroup.add(p2);
+
+            // --- ㅗ형 하부 받침 디테일 ---
+            const basePlateW = pGap + pipeD + 40;
+            // 바닥 판
+            const plate = createMesh(new THREE.BoxGeometry(basePlateW, 10, bW * 1.5), 0x333333);
+            plate.position.set(posX, 5, 0);
+            railingGroup.add(plate);
+            // 수직 지지대
+            const stem = createMesh(new THREE.BoxGeometry(10, ground, bW), 0x444444);
+            stem.position.set(posX, ground/2, 0);
+            railingGroup.add(stem);
+
+            // --- 상하 평철 및 구간 내 살 배치 ---
+            if (i < numSections) {
+                const center = posX + actualInterval/2;
+                
+                // 상부 평철
+                const topBar = createMesh(new THREE.BoxGeometry(actualInterval, bT, bW), 0x555555);
+                topBar.position.set(center, H, 0);
+                railingGroup.add(topBar);
+
+                // 하부 평철
+                const botBar = createMesh(new THREE.BoxGeometry(actualInterval, bT, bW), 0x555555);
+                botBar.position.set(center, ground + bT/2, 0);
+                railingGroup.add(botBar);
+
+                // 구간 내 살(Pickets) 계산
+                const netWidth = actualInterval - pGap;
+                const subCount = Math.max(0, Math.floor(netWidth / pGap) - 1);
+                const subSpacing = netWidth / (subCount + 1);
+
+                for (let j = 1; j <= subCount; j++) {
+                    const subX = posX + (pGap/2) + (subSpacing * j);
+                    const picket = createMesh(new THREE.CylinderGeometry(pipeD/2, pipeD/2, picketH, 16), 0xbbbbbb);
+                    picket.position.set(subX, picketY, 0);
+                    railingGroup.add(picket);
+                }
+            }
+        }
+    }
+
+    // 이벤트 리스너: 값 변경 시 즉시 갱신
+    document.querySelectorAll('input').forEach(el => {
+        el.addEventListener('input', () => {
+            renderRailing();
+        });
+    });
+
+    window.addEventListener('resize', () => {
+        camera.aspect = (window.innerWidth - 320) / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth - 320, window.innerHeight);
+    });
+
+    init();
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+    }
+    animate();
+</script>
+</body>
+</html>
