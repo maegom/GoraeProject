@@ -2,8 +2,8 @@
 <html lang="ko">
 
 <head>
-    <meta charset="UTF-8">
-    <title>GoreIeum - 가변 포스트 난간 시뮬레이터 (v2.2)</title>
+    <meta charset="UTF-8" />
+    <title>GoreIeum - 가변 포스트 난간 시뮬레이터 (v2.6)</title>
     <style>
         body {
             margin: 0;
@@ -41,7 +41,7 @@
             font-weight: 600;
         }
 
-        input {
+        input[type="number"] {
             width: 100%;
             padding: 12px;
             border: 1px solid #e0e0e0;
@@ -51,33 +51,56 @@
             font-size: 14px;
         }
 
-        input:focus {
+        input[type="number"]:focus {
             border-color: #007bff;
             outline: none;
         }
 
         h2 {
             font-size: 20px;
-            margin-bottom: 25px;
+            margin-bottom: 18px;
             color: #1a1a1a;
             border-bottom: 3px solid #007bff;
             padding-bottom: 10px;
             display: inline-block;
         }
 
-        .loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.8);
+        .row2 {
             display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 200;
-            visibility: hidden;
-            font-weight: bold;
+            gap: 8px;
+        }
+
+        .row2 input {
+            width: 50%;
+        }
+
+        .toggle-row {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0 18px;
+        }
+
+        .btn-toggle {
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid #e0e0e0;
+            background: #f3f5f7;
+            color: #222;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform .05s, background .2s, border-color .2s;
+            user-select: none;
+        }
+
+        .btn-toggle:active {
+            transform: translateY(1px);
+        }
+
+        .btn-toggle.on {
+            background: #e7f1ff;
+            border-color: #a8ccff;
+            color: #0b57d0;
         }
 
         .info-box {
@@ -87,7 +110,19 @@
             background: #f1f3f5;
             padding: 10px;
             border-radius: 6px;
-            margin-top: 20px;
+            margin-top: 14px;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            visibility: hidden;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -96,38 +131,49 @@
 
     <div id="sidebar">
         <h2>GoreIeum Modeler</h2>
+
+        <!-- ✅ ON/OFF 토글 버튼 -->
+        <div class="toggle-row">
+            <button id="btnPosts" class="btn-toggle on" type="button">포스트 ON</button>
+            <button id="btnRails" class="btn-toggle on" type="button">난간 ON</button>
+        </div>
+
         <div class="input-group">
             <label>전체 길이 (mm)</label>
             <input type="number" id="totalL" value="3000">
         </div>
+
         <div class="input-group">
             <label>포스트(기둥) 간격 (mm)</label>
             <input type="number" id="postInt" value="1000">
         </div>
+
+        <div class="input-group">
+            <label>살(파이프) 간격 (mm)</label>
+            <input type="number" id="picketGap" value="100">
+        </div>
+
         <div class="input-group">
             <label>파이프(살) 외경 (mm)</label>
             <input type="number" id="pipeOD" value="20" step="0.1">
         </div>
 
         <div class="input-group">
-            <label>살(파이프) 간격 (mm)</label>
-            <input type="number" id="picketGap" value="120">
-        </div>
-        <div class="input-group">
             <label>난간 높이 (mm)</label>
             <input type="number" id="height" value="1200">
         </div>
+
         <div class="input-group">
             <label>평철 폭 / 두께 (mm)</label>
-            <div style="display:flex; gap:8px;">
+            <div class="row2">
                 <input type="number" id="barW" value="50" title="평철 폭">
                 <input type="number" id="barT" value="6" title="평철 두께">
             </div>
         </div>
+
         <div class="info-box">
-            * 사람 모델: <b>1/100 스케일</b> 적용<br>
-            * 구조: 살 2개 일체형 포스트 및 ㅗ형 받침 적용<br>
-            * 수치 변경 시 실시간으로 모델링이 업데이트됩니다.
+            * <b>포스트 ON/OFF</b> : 포스트(살2개) + 받침/플레이트/앙카 + 포스트 상부 캡 포함<br>
+            * <b>난간 ON/OFF</b> : 상/하 평철 + 구간 내 살(파이프) 포함
         </div>
     </div>
 
@@ -141,6 +187,64 @@
 
     <script>
         let scene, camera, renderer, controls, railingGroup, humanModel;
+
+        // ✅ 화면 토글 상태(사용자 버튼)
+        const VIEW = {
+            showPosts: true,
+            showRails: true,
+        };
+
+        // ==============================
+        // POST(포스트) 설계 파라미터 (코드에서만 수정)
+        // ==============================
+        const POST_CFG = {
+            pairGapExtra: 2,
+
+            postPipeRadScale: 1.0,
+            postPipeSegs: 20,
+
+            stemW: 10,
+            stemDScale: 1.0,
+            stemInsetY: 0,
+            stemWLinkedToBar: true,
+            stemWScale: 1.6,
+
+            headWScale: 0.6,
+            headT: 6,
+            headTLinkedToBar: true,
+
+            headDLinkedToBarW: true,
+            headDScale: 1.0,
+            headDOffset: 0,
+
+            basePlateT: 10,
+            basePlateZScale: 1.5,
+            basePlateExtraW: 40,
+            basePlateTLinkedToBar: true,
+            basePlateTScale: 1.8,
+
+            holeCount: 4,
+            holeRad: null,
+            holeOffset: 35,
+            holeSegs: 24,
+            anchorHeight: 30,
+            anchorRad: 6,
+
+            barCutUseHeadW: true,
+            barCutExtra: 0,
+            barMinLen: 80,
+
+            makePostTopCap: true,
+            postTopCapExtra: 0,
+            postTopCapMin: 40,
+
+            // ✅ 구간 평철이 포스트 캡과 겹치지 않도록 추가 컷
+            railCapClearance: 2,     // 여유(겹치면 2~10mm로 증가)
+            railMinLen: 80,          // 너무 짧아지면 방지
+
+
+            postZ: 0,
+        };
 
         function init() {
             scene = new THREE.Scene();
@@ -157,23 +261,46 @@
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
 
-            // 조명 설정 (언리얼 시각화 스타일)
-            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
-            scene.add(hemiLight);
-
+            scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
             const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
             dirLight.position.set(2000, 4000, 2000);
             scene.add(dirLight);
 
-            // 그리드 보조선
-            const grid = new THREE.GridHelper(10000, 50, 0xd1d1d1, 0xe1e1e1);
-            scene.add(grid);
+            scene.add(new THREE.GridHelper(10000, 50, 0xd1d1d1, 0xe1e1e1));
 
             railingGroup = new THREE.Group();
             scene.add(railingGroup);
 
-            loadHuman(); // 사람 모델 로딩 (1/100 스케일)
-            renderRailing(); // 난간 생성 로직 실행
+            wireUI();
+            loadHuman();
+            renderRailing();
+        }
+
+        function wireUI() {
+            const btnPosts = document.getElementById('btnPosts');
+            const btnRails = document.getElementById('btnRails');
+
+            const syncBtn = (btn, onText, offText, isOn) => {
+                btn.classList.toggle('on', isOn);
+                btn.textContent = isOn ? onText : offText;
+            };
+
+            syncBtn(btnPosts, '포스트 ON', '포스트 OFF', VIEW.showPosts);
+            syncBtn(btnRails, '난간 ON', '난간 OFF', VIEW.showRails);
+
+            btnPosts.addEventListener('click', () => {
+                VIEW.showPosts = !VIEW.showPosts;
+                syncBtn(btnPosts, '포스트 ON', '포스트 OFF', VIEW.showPosts);
+                renderRailing();
+            });
+
+            btnRails.addEventListener('click', () => {
+                VIEW.showRails = !VIEW.showRails;
+                syncBtn(btnRails, '난간 ON', '난간 OFF', VIEW.showRails);
+                renderRailing();
+            });
+
+            document.querySelectorAll('input').forEach(el => el.addEventListener('input', renderRailing));
         }
 
         function loadHuman() {
@@ -185,22 +312,15 @@
 
             loader.load(rawUrl, (gltf) => {
                 humanModel = gltf.scene;
-
-                // [1] 크기 수정: 난간 1000mm 대비 적절한 성인 남성 크기 (기존 10 -> 17.5로 변경)
-                // 이 수치가 커질수록 사람이 커집니다.
                 humanModel.scale.set(25, 25, 25);
-
-                // [2] 위치 수정: (X축, Y축, Z축)
-                // X: -600 (왼쪽으로 60cm), Y: 0 (바닥 고정), Z: 500 (앞으로 50cm)
                 humanModel.position.set(300, 0, -500);
-
-                // [3] 회전 수정: 사람이 난간을 바라보는 각도 (라디안 단위)
                 humanModel.rotation.y = Math.PI / 4;
-
                 scene.add(humanModel);
                 loadingScreen.style.visibility = 'hidden';
+                loadingScreen.innerText = '모델 데이터를 불러오는 중...';
             },
                 (xhr) => {
+                    if (!xhr.total) return;
                     const percent = Math.round((xhr.loaded / xhr.total) * 100);
                     loadingScreen.innerText = `모델 로딩 중... (${percent}%)`;
                 },
@@ -209,102 +329,177 @@
                     loadingScreen.innerText = '사람 모델 로드 실패';
                 });
         }
+
         function createMesh(geom, color) {
             const mat = new THREE.MeshStandardMaterial({
-                color,
-                metalness: 0.6,
-                roughness: 0.3
+                color, metalness: 0.6, roughness: 0.3
             });
             return new THREE.Mesh(geom, mat);
         }
 
-       function renderRailing() {
-  // 기존 객체 삭제
-  while (railingGroup.children.length > 0) railingGroup.remove(railingGroup.children[0]);
+        function makePostPairFactory(pipeD, picketH, color) {
+            const r = (pipeD / 2) * POST_CFG.postPipeRadScale;
+            const segs = POST_CFG.postPipeSegs;
+            const geom = new THREE.CylinderGeometry(r, r, picketH, segs);
+            return () => createMesh(geom, color);
+        }
 
-  // 입력값 읽기 및 기본값 처리
-  const L = Math.max(100, parseFloat(document.getElementById('totalL').value) || 3000);
-  const pInt = Math.max(100, parseFloat(document.getElementById('postInt').value) || 1000);
-  const pGap = Math.max(1, parseFloat(document.getElementById('picketGap').value) || 120);
-  const bW = Math.max(1, parseFloat(document.getElementById('barW').value) || 50);
-  const bT = Math.max(1, parseFloat(document.getElementById('barT').value) || 9);
-  const H = Math.max(200, parseFloat(document.getElementById('height').value) || 1100);
+        // return: { headW, basePlateW }
+        function addBaseAndStand(posX, bW, bT, pGapSafe, pipeD, ground) {
+            const basePlateW = pGapSafe + pipeD + POST_CFG.basePlateExtraW;
 
-  // ✅ 파이프 외경 입력값으로 변경
-  const pipeD = Math.max(6, parseFloat(document.getElementById('pipeOD').value) || 20);
+            const basePlateT = (POST_CFG.basePlateTLinkedToBar ?? false)
+                ? Math.max(2, bT * (POST_CFG.basePlateTScale ?? 1.8))
+                : POST_CFG.basePlateT;
 
-  const ground = 60; // 바닥 띄움 (ㅗ형 받침 높이)
+            const basePlateD = bW * POST_CFG.basePlateZScale;
 
-  // ✅ 겹침 방지: 최소 간격 보정(원하면 제거 가능)
-  const minGap = pipeD + 2; // 외경 + 2mm 여유
-  const pGapSafe = Math.max(pGap, minGap);
+            const plate = createMesh(new THREE.BoxGeometry(basePlateW, basePlateT, basePlateD), 0x333333);
+            plate.position.set(posX, basePlateT / 2, POST_CFG.postZ);
+            railingGroup.add(plate);
 
-  const numSections = Math.max(1, Math.round(L / pInt));
-  const actualInterval = L / numSections;
+            const stemW = (POST_CFG.stemWLinkedToBar ?? false)
+                ? Math.max(2, bT * (POST_CFG.stemWScale ?? 1.6))
+                : POST_CFG.stemW;
 
-  for (let i = 0; i <= numSections; i++) {
-    const posX = i * actualInterval;
-    const picketH = H - ground - (bT * 2);
-    const picketY = ground + bT + (picketH / 2);
+            const stemH = ground + POST_CFG.stemInsetY;
+            const stemD = bW * POST_CFG.stemDScale;
 
-    // --- 포스트(구간 경계) : 살 2개가 나란히 붙어 패턴 유지 ---
-    const p1 = createMesh(new THREE.CylinderGeometry(pipeD / 2, pipeD / 2, picketH, 16), 0x888888);
-    p1.position.set(posX - pGapSafe / 2, picketY, 0);
-    railingGroup.add(p1);
+            const stem = createMesh(new THREE.BoxGeometry(stemW, stemH, stemD), 0x444444);
+            stem.position.set(posX, stemH / 2, POST_CFG.postZ);
+            railingGroup.add(stem);
 
-    const p2 = createMesh(new THREE.CylinderGeometry(pipeD / 2, pipeD / 2, picketH, 16), 0x888888);
-    p2.position.set(posX + pGapSafe / 2, picketY, 0);
-    railingGroup.add(p2);
+            const headW = basePlateW * POST_CFG.headWScale;
+            const headT = (POST_CFG.headTLinkedToBar ?? true) ? bT : POST_CFG.headT;
 
-    // --- ㅗ형 하부 받침 디테일 ---
-    const basePlateW = pGapSafe + pipeD + 40;
+            const headD = (POST_CFG.headDLinkedToBarW ?? true)
+                ? Math.max(2, (bW * (POST_CFG.headDScale ?? 1.0)) + (POST_CFG.headDOffset ?? 0))
+                : (basePlateD * (POST_CFG.headDScale ?? 1.0));
 
-    // 바닥 판
-    const plate = createMesh(new THREE.BoxGeometry(basePlateW, 10, bW * 1.5), 0x333333);
-    plate.position.set(posX, 5, 0);
-    railingGroup.add(plate);
+            const head = createMesh(new THREE.BoxGeometry(headW, headT, headD), 0x444444);
+            head.position.set(posX, ground + headT / 2, POST_CFG.postZ);
+            railingGroup.add(head);
 
-    // 수직 지지대
-    const stem = createMesh(new THREE.BoxGeometry(10, ground, bW), 0x444444);
-    stem.position.set(posX, ground / 2, 0);
-    railingGroup.add(stem);
+            // 앙카(수직)
+            const off = POST_CFG.holeOffset;
+            const holes = (POST_CFG.holeCount === 2)
+                ? [[-off, 0], [off, 0]]
+                : [[-off, -off], [off, -off], [-off, off], [off, off]];
 
-    // --- 상하 평철 및 구간 내 살 배치 ---
-    if (i < numSections) {
-      const center = posX + actualInterval / 2;
+            const anchorR = (POST_CFG.holeRad != null) ? POST_CFG.holeRad : (POST_CFG.anchorRad ?? 6);
+            const anchorH = POST_CFG.anchorHeight ?? 120;
+            const anchorGeo = new THREE.CylinderGeometry(anchorR, anchorR, anchorH, POST_CFG.holeSegs);
 
-      // 상부 평철
-      const topBar = createMesh(new THREE.BoxGeometry(actualInterval, bT, bW), 0x555555);
-      topBar.position.set(center, H, 0);
-      railingGroup.add(topBar);
-
-      // 하부 평철
-      const botBar = createMesh(new THREE.BoxGeometry(actualInterval, bT, bW), 0x555555);
-      botBar.position.set(center, ground + bT / 2, 0);
-      railingGroup.add(botBar);
-
-      // 구간 내 살(Pickets) 계산
-      const netWidth = actualInterval - pGapSafe;
-      const subCount = Math.max(0, Math.floor(netWidth / pGapSafe) - 1);
-      const subSpacing = netWidth / (subCount + 1);
-
-      for (let j = 1; j <= subCount; j++) {
-        const subX = posX + (pGapSafe / 2) + (subSpacing * j);
-        const picket = createMesh(new THREE.CylinderGeometry(pipeD / 2, pipeD / 2, picketH, 16), 0xbbbbbb);
-        picket.position.set(subX, picketY, 0);
-        railingGroup.add(picket);
-      }
-    }
-  }
-}
-
-
-        // 이벤트 리스너: 값 변경 시 즉시 갱신
-        document.querySelectorAll('input').forEach(el => {
-            el.addEventListener('input', () => {
-                renderRailing();
+            holes.forEach(([hx, hz]) => {
+                const a = createMesh(anchorGeo, 0x111111);
+                a.position.set(posX + hx, basePlateT + anchorH / 2, POST_CFG.postZ + hz);
+                railingGroup.add(a);
             });
-        });
+
+            return { headW, basePlateW };
+        }
+
+        function renderRailing() {
+            while (railingGroup.children.length > 0) railingGroup.remove(railingGroup.children[0]);
+
+            const L = Math.max(100, parseFloat(document.getElementById('totalL').value) || 3000);
+            const pInt = Math.max(100, parseFloat(document.getElementById('postInt').value) || 1000);
+            const pGap = Math.max(1, parseFloat(document.getElementById('picketGap').value) || 120);
+            const pipeD = Math.max(6, parseFloat(document.getElementById('pipeOD').value) || 20);
+
+            const bW = Math.max(1, parseFloat(document.getElementById('barW').value) || 50);
+            const bT = Math.max(1, parseFloat(document.getElementById('barT').value) || 6);
+            const H = Math.max(200, parseFloat(document.getElementById('height').value) || 1100);
+
+            const ground = 60;
+
+            const minGap = pipeD + POST_CFG.pairGapExtra;
+            const pGapSafe = Math.max(pGap, minGap);
+
+            const numSections = Math.max(1, Math.round(L / pInt));
+            const actualInterval = L / numSections;
+
+            const picketH = Math.max(50, H - ground - (bT * 2));
+            const picketY = ground + bT + (picketH / 2);
+
+            for (let i = 0; i <= numSections; i++) {
+                const posX = i * actualInterval;
+
+                // ===== POSTS =====
+                let postInfo = { headW: 0, basePlateW: 0 };
+
+                if (VIEW.showPosts) {
+                    const makePost = makePostPairFactory(pipeD, picketH, 0x888888);
+
+                    const p1 = makePost();
+                    p1.position.set(posX - pGapSafe / 2, picketY, POST_CFG.postZ);
+                    railingGroup.add(p1);
+
+                    const p2 = makePost();
+                    p2.position.set(posX + pGapSafe / 2, picketY, POST_CFG.postZ);
+                    railingGroup.add(p2);
+
+                    postInfo = addBaseAndStand(posX, bW, bT, pGapSafe, pipeD, ground);
+
+                    // 포스트 상부 캡(포스트 ON일 때만)
+                    if (POST_CFG.makePostTopCap) {
+                        const capBase = (POST_CFG.barCutUseHeadW ?? true) ? postInfo.headW : postInfo.basePlateW;
+                        const capLen = Math.max(POST_CFG.postTopCapMin ?? 40, (capBase || 0) + (POST_CFG.postTopCapExtra ?? 0));
+
+                        const cap = createMesh(new THREE.BoxGeometry(capLen, bT, bW), 0x555555);
+                        cap.position.set(posX, H, POST_CFG.postZ);
+                        railingGroup.add(cap);
+                    }
+                }
+
+                // ===== RAILS =====
+                if (VIEW.showRails && i < numSections) {
+                    const center = posX + actualInterval / 2;
+
+                    // 평철 길이 컷(포스트가 꺼져있으면 컷 없이 전체 길이)
+                    let barLen = actualInterval;
+
+                    if (VIEW.showPosts) {
+                        // (1) 포스트 받침(헤드/플레이트) 기준 컷
+                        const cutBase = (POST_CFG.barCutUseHeadW ?? true) ? postInfo.headW : postInfo.basePlateW;
+                        const cutX = (cutBase / 2) + (POST_CFG.barCutExtra ?? 0);
+
+                        // (2) 포스트 캡(상부 평철) 기준 추가 컷  ✅ 핵심
+                        const capBase = (POST_CFG.barCutUseHeadW ?? true) ? postInfo.headW : postInfo.basePlateW;
+                        const capLen = Math.max(POST_CFG.postTopCapMin ?? 40, (capBase || 0) + (POST_CFG.postTopCapExtra ?? 0));
+                        const capHalf = capLen / 2;
+
+                        const extra = (POST_CFG.railCapClearance ?? 0);
+
+                        // 최종: (받침 컷) + (캡 컷) 둘 중 더 큰 쪽을 채택하거나, 합산 중 택1
+                        // ✅ 추천: 더 큰 쪽으로 컷하면 과하게 짧아지지 않고 겹침만 제거됨
+                        const endCut = Math.max(cutX, capHalf + extra);
+
+                        barLen = Math.max((POST_CFG.railMinLen ?? 80), actualInterval - 2 * endCut);
+                    }
+
+                    const topBar = createMesh(new THREE.BoxGeometry(barLen, bT, bW), 0x555555);
+                    topBar.position.set(center, H, POST_CFG.postZ);
+                    railingGroup.add(topBar);
+
+                    const botBar = createMesh(new THREE.BoxGeometry(barLen, bT, bW), 0x555555);
+                    botBar.position.set(center, ground + bT / 2, POST_CFG.postZ);
+                    railingGroup.add(botBar);
+
+                    // 구간 내 살
+                    const netWidth = actualInterval - pGapSafe;
+                    const subCount = Math.max(0, Math.floor(netWidth / pGapSafe) - 1);
+                    const subSpacing = netWidth / (subCount + 1);
+
+                    for (let j = 1; j <= subCount; j++) {
+                        const subX = posX + (pGapSafe / 2) + (subSpacing * j);
+                        const picket = createMesh(new THREE.CylinderGeometry(pipeD / 2, pipeD / 2, picketH, 16), 0xbbbbbb);
+                        picket.position.set(subX, picketY, POST_CFG.postZ);
+                        railingGroup.add(picket);
+                    }
+                }
+            }
+        }
 
         window.addEventListener('resize', () => {
             camera.aspect = (window.innerWidth - 320) / window.innerHeight;
@@ -313,6 +508,7 @@
         });
 
         init();
+
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
@@ -320,6 +516,7 @@
         }
         animate();
     </script>
+
 </body>
 
 </html>
