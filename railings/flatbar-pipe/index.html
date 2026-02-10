@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>평철 + 파이프살 | 고래이음 난간 시뮬레이터</title>
+
+    <!-- ✅ 공통 CSS (flatbar-pipe는 2단계 위로 올라가야 함) -->
+    <link rel="stylesheet" href="../../shared/css/app.css" />
+
+    <style>
+        /* ====== page layout ====== */
+        body {
+            margin: 0;
+            display: flex;
+            font-family: 'Pretendard', sans-serif;
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        #sidebar {
+            width: 320px;
+            padding: 18px 18px 22px;
+            background: #ffffff;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, 0.05);
+            z-index: 100;
+        }
+
+        #canvas-container {
+            flex-grow: 1;
+            position: relative;
+            background: #eee;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            box-sizing: border-box;
+            transition: border 0.2s;
+            font-size: 14px;
+        }
+
+        input[type="number"]:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        .pageTitle {
+            font-size: 16px;
+            font-weight: 900;
+            margin: 8px 0 4px;
+        }
+
+        .pageSub {
+            font-size: 12px;
+            color: #777;
+            margin: 0 0 14px;
+            line-height: 1.5;
+        }
+
+        .row2 {
+            display: flex;
+            gap: 8px;
+        }
+
+        .row2 input {
+            width: 50%;
+        }
+
+        .toggle-row {
+            display: flex;
+            gap: 10px;
+            margin: 12px 0 16px;
+        }
+
+        .btn-toggle {
+            flex: 1;
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+            background: #f3f5f7;
+            color: #222;
+            font-weight: 900;
+            cursor: pointer;
+            transition: transform .05s, background .2s, border-color .2s;
+            user-select: none;
+        }
+
+        .btn-toggle:active {
+            transform: translateY(1px);
+        }
+
+        .btn-toggle.on {
+            background: #e7f1ff;
+            border-color: #a8ccff;
+            color: #0b57d0;
+        }
+
+        .info-box {
+            font-size: 11px;
+            color: #888;
+            line-height: 1.6;
+            background: #f1f3f5;
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 14px;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.82);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            visibility: hidden;
+            font-weight: 900;
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 900;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #f1f3f5;
+            color: #495057;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- ✅ 공통 topbar (홈/목록 이동) -->
+    <header class="topbar" style="position:fixed; left:320px; right:0; top:0;">
+        <a class="brand" href="#" id="brandLink">고래이음</a>
+        <nav class="nav">
+            <a href="#" id="homeLink">Home</a>
+            <a class="active" href="../">Back</a>
+        </nav>
+    </header>
+
+
+    <aside id="sidebar">
+        <div class="badge">Railing / Flatbar + Pipe</div>
+        <div class="pageTitle">평철 + 파이프살</div>
+        <p class="pageSub">
+            위/아래 평철 + 파이프 살 + (옵션) 포스트/받침 구성.<br>
+            값 변경 시 3D 모델이 실시간 업데이트됩니다.
+        </p>
+
+        <!-- ✅ ON/OFF 토글 -->
+        <div class="toggle-row">
+            <button id="btnPosts" class="btn-toggle on" type="button">포스트 ON</button>
+            <button id="btnRails" class="btn-toggle on" type="button">난간 ON</button>
+        </div>
+
+        <div class="input-group">
+            <label>전체 길이 (mm)</label>
+            <input type="number" id="totalL" value="3000">
+        </div>
+
+        <div class="input-group">
+            <label>포스트(기둥) 간격 (mm)</label>
+            <input type="number" id="postInt" value="1000">
+        </div>
+
+        <div class="input-group">
+            <label>살(파이프) 간격 (mm)</label>
+            <input type="number" id="picketGap" value="120">
+        </div>
+
+        <div class="input-group">
+            <label>파이프(살) 외경 (mm)</label>
+            <input type="number" id="pipeOD" value="20" step="0.1">
+        </div>
+
+        <div class="input-group">
+            <label>난간 높이 (mm)</label>
+            <input type="number" id="height" value="1100">
+        </div>
+
+        <div class="input-group">
+            <label>평철 폭 / 두께 (mm)</label>
+            <div class="row2">
+                <input type="number" id="barW" value="50" title="평철 폭">
+                <input type="number" id="barT" value="6" title="평철 두께">
+            </div>
+        </div>
+
+        <div class="info-box">
+            * Home / Railings 이동은 상단 메뉴에서 가능합니다.<br>
+            * 포스트/난간 토글로 구성 비교가 가능합니다.<br>
+            * 추후 BOM/견적 연동을 위해 입력값 구조를 유지합니다.
+        </div>
+    </aside>
+
+    <main id="canvas-container" style="padding-top:56px;">
+        <div id="loading" class="loading-overlay">모델 데이터를 불러오는 중...</div>
+    </main>
+
+    <!-- ✅ three.js (UMD) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+    <script>
+        let scene, camera, renderer, controls, railingGroup, humanModel;
+
+        // ✅ 여기만 바꾸면 Home 버튼이 이동하는 URL이 바뀜
+        const HOME_URL = "https://goraeeum.cafe24.com/"; // <- 네 홈 주소로 변경
+
+
+        // ✅ 화면 토글 상태(사용자 버튼)
+        const VIEW = { showPosts: true, showRails: true };
+
+        // ==============================
+        // POST(포스트) 설계 파라미터 (코드에서만 수정)
+        // ==============================
+        const POST_CFG = {
+            pairGapExtra: 2,
+
+            postPipeRadScale: 1.0,
+            postPipeSegs: 20,
+
+            stemW: 10,
+            stemDScale: 1.0,
+            stemInsetY: 0,
+            stemWLinkedToBar: true,
+            stemWScale: 1.6,
+
+            headWScale: 0.6,
+            headT: 6,
+            headTLinkedToBar: true,
+
+            headDLinkedToBarW: true,
+            headDScale: 1.0,
+            headDOffset: 0,
+
+            basePlateT: 10,
+            basePlateZScale: 1.5,
+            basePlateExtraW: 40,
+            basePlateTLinkedToBar: true,
+            basePlateTScale: 1.8,
+
+            holeCount: 4,
+            holeRad: null,
+            holeOffset: 35,
+            holeSegs: 24,
+            anchorHeight: 120,
+            anchorRad: 6,
+
+            // ✅ 구간 평철 컷 기준(포스트 헤드/플레이트)
+            barCutUseHeadW: true,
+            barCutExtra: 0,
+            barMinLen: 80,
+
+            // ✅ 포스트 캡(상부 평철) - 겹침이 보이면 railCapClearance를 늘려서 구간 평철을 더 줄이면 됨
+            makePostTopCap: true,
+            makePostBotCap: true,
+            postCapExtra: 0,
+            postCapMin: 40,
+
+            // ✅ 구간 평철이 포스트 캡과 겹치지 않도록 여유 컷
+            railCapClearance: 2,
+            railMinLen: 80,
+
+            postZ: 0,
+        };
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf1f3f5);
+
+            camera = new THREE.PerspectiveCamera(45, (window.innerWidth - 320) / window.innerHeight, 10, 50000);
+            camera.position.set(2500, 1500, 3000);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth - 320, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+
+            scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(2000, 4000, 2000);
+            scene.add(dirLight);
+
+            scene.add(new THREE.GridHelper(10000, 50, 0xd1d1d1, 0xe1e1e1));
+
+            railingGroup = new THREE.Group();
+            scene.add(railingGroup);
+
+            wireUI();
+            loadHuman();
+            renderRailing();
+        }
+
+        function wireUI() {
+            const btnPosts = document.getElementById('btnPosts');
+            const btnRails = document.getElementById('btnRails');
+
+            // ✅ Home / Brand 링크를 입력 URL로 연결
+            const homeLink = document.getElementById('homeLink');
+            if (homeLink) homeLink.href = HOME_URL;
+
+            const brandLink = document.getElementById('brandLink');
+            if (brandLink) brandLink.href = HOME_URL;
+
+
+            const syncBtn = (btn, onText, offText, isOn) => {
+                btn.classList.toggle('on', isOn);
+                btn.textContent = isOn ? onText : offText;
+            };
+
+            const syncAll = () => {
+                syncBtn(btnPosts, '포스트 ON', '포스트 OFF', VIEW.showPosts);
+                syncBtn(btnRails, '난간 ON', '난간 OFF', VIEW.showRails);
+            };
+            syncAll();
+
+            btnPosts.addEventListener('click', () => { VIEW.showPosts = !VIEW.showPosts; syncAll(); renderRailing(); });
+            btnRails.addEventListener('click', () => { VIEW.showRails = !VIEW.showRails; syncAll(); renderRailing(); });
+
+            document.querySelectorAll('input').forEach(el => el.addEventListener('input', renderRailing));
+        }
+
+        function loadHuman() {
+            const loader = new THREE.GLTFLoader();
+            const loadingScreen = document.getElementById('loading');
+            loadingScreen.style.visibility = 'visible';
+
+            const rawUrl = 'https://dl.dropboxusercontent.com/scl/fi/y395rlm5m9mhu67b52g15/SampleHuman.glb?rlkey=idzzqtoc993laykunl3ey7oyx';
+
+            loader.load(rawUrl, (gltf) => {
+                humanModel = gltf.scene;
+                humanModel.scale.set(25, 25, 25);
+                humanModel.position.set(300, 0, -500);
+                humanModel.rotation.y = Math.PI / 4;
+                scene.add(humanModel);
+                loadingScreen.style.visibility = 'hidden';
+                loadingScreen.innerText = '모델 데이터를 불러오는 중...';
+            },
+                (xhr) => {
+                    if (!xhr.total) return;
+                    const percent = Math.round((xhr.loaded / xhr.total) * 100);
+                    loadingScreen.innerText = `모델 로딩 중... (${percent}%)`;
+                },
+                (error) => {
+                    console.error('모델 로드 실패:', error);
+                    loadingScreen.innerText = '사람 모델 로드 실패';
+                });
+        }
+
+        function createMesh(geom, color) {
+            const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.6, roughness: 0.3 });
+            return new THREE.Mesh(geom, mat);
+        }
+
+        function makePostPairFactory(pipeD, picketH, color) {
+            const r = (pipeD / 2) * POST_CFG.postPipeRadScale;
+            const segs = POST_CFG.postPipeSegs;
+            const geom = new THREE.CylinderGeometry(r, r, picketH, segs);
+            return () => createMesh(geom, color);
+        }
+
+        // return: { headW, basePlateW, capLen }
+        function addBaseAndStand(posX, bW, bT, pGapSafe, pipeD, ground) {
+            const basePlateW = pGapSafe + pipeD + POST_CFG.basePlateExtraW;
+
+            const basePlateT = (POST_CFG.basePlateTLinkedToBar ?? false)
+                ? Math.max(2, bT * (POST_CFG.basePlateTScale ?? 1.8))
+                : POST_CFG.basePlateT;
+
+            const basePlateD = bW * POST_CFG.basePlateZScale;
+
+            const plate = createMesh(new THREE.BoxGeometry(basePlateW, basePlateT, basePlateD), 0x333333);
+            plate.position.set(posX, basePlateT / 2, POST_CFG.postZ);
+            railingGroup.add(plate);
+
+            const stemW = (POST_CFG.stemWLinkedToBar ?? false)
+                ? Math.max(2, bT * (POST_CFG.stemWScale ?? 1.6))
+                : POST_CFG.stemW;
+
+            const stemH = ground + POST_CFG.stemInsetY;
+            const stemD = bW * POST_CFG.stemDScale;
+
+            const stem = createMesh(new THREE.BoxGeometry(stemW, stemH, stemD), 0x444444);
+            stem.position.set(posX, stemH / 2, POST_CFG.postZ);
+            railingGroup.add(stem);
+
+            const headW = basePlateW * POST_CFG.headWScale;
+            const headT = (POST_CFG.headTLinkedToBar ?? true) ? bT : POST_CFG.headT;
+
+            const headD = (POST_CFG.headDLinkedToBarW ?? true)
+                ? Math.max(2, (bW * (POST_CFG.headDScale ?? 1.0)) + (POST_CFG.headDOffset ?? 0))
+                : (basePlateD * (POST_CFG.headDScale ?? 1.0));
+
+            const head = createMesh(new THREE.BoxGeometry(headW, headT, headD), 0x444444);
+            head.position.set(posX, ground + headT / 2, POST_CFG.postZ);
+            railingGroup.add(head);
+
+            // 앙카(수직)
+            const off = POST_CFG.holeOffset;
+            const holes = (POST_CFG.holeCount === 2)
+                ? [[-off, 0], [off, 0]]
+                : [[-off, -off], [off, -off], [-off, off], [off, off]];
+
+            const anchorR = (POST_CFG.holeRad != null) ? POST_CFG.holeRad : (POST_CFG.anchorRad ?? 6);
+            const anchorH = POST_CFG.anchorHeight ?? 120;
+            const anchorGeo = new THREE.CylinderGeometry(anchorR, anchorR, anchorH, POST_CFG.holeSegs);
+
+            holes.forEach(([hx, hz]) => {
+                const a = createMesh(anchorGeo, 0x111111);
+                a.position.set(posX + hx, basePlateT + anchorH / 2, POST_CFG.postZ + hz);
+                railingGroup.add(a);
+            });
+
+            // 캡 길이 산정(포스트 위/아래 평철)
+            const capBase = (POST_CFG.barCutUseHeadW ?? true) ? headW : basePlateW;
+            const capLen = Math.max(POST_CFG.postCapMin ?? 40, (capBase || 0) + (POST_CFG.postCapExtra ?? 0));
+
+            return { headW, basePlateW, capLen };
+        }
+
+        function renderRailing() {
+            while (railingGroup.children.length > 0) railingGroup.remove(railingGroup.children[0]);
+
+            const L = Math.max(100, parseFloat(document.getElementById('totalL').value) || 3000);
+            const pInt = Math.max(100, parseFloat(document.getElementById('postInt').value) || 1000);
+            const pGap = Math.max(1, parseFloat(document.getElementById('picketGap').value) || 120);
+            const pipeD = Math.max(6, parseFloat(document.getElementById('pipeOD').value) || 20);
+
+            const bW = Math.max(1, parseFloat(document.getElementById('barW').value) || 50);
+            const bT = Math.max(1, parseFloat(document.getElementById('barT').value) || 6);
+            const H = Math.max(200, parseFloat(document.getElementById('height').value) || 1100);
+
+            const ground = 60;
+
+            const minGap = pipeD + POST_CFG.pairGapExtra;
+            const pGapSafe = Math.max(pGap, minGap);
+
+            const numSections = Math.max(1, Math.round(L / pInt));
+            const actualInterval = L / numSections;
+
+            const picketH = Math.max(50, H - ground - (bT * 2));
+            const picketY = ground + bT + (picketH / 2);
+
+            // 1) 포스트 메타(캡길이 포함) 먼저 구함
+            const postMeta = new Array(numSections + 1).fill(null).map(() => ({ capLen: 0, headW: 0, basePlateW: 0 }));
+
+            if (VIEW.showPosts) {
+                for (let i = 0; i <= numSections; i++) {
+                    const posX = i * actualInterval;
+
+                    const makePost = makePostPairFactory(pipeD, picketH, 0x888888);
+
+                    const p1 = makePost();
+                    p1.position.set(posX - pGapSafe / 2, picketY, POST_CFG.postZ);
+                    railingGroup.add(p1);
+
+                    const p2 = makePost();
+                    p2.position.set(posX + pGapSafe / 2, picketY, POST_CFG.postZ);
+                    railingGroup.add(p2);
+
+                    const meta = addBaseAndStand(posX, bW, bT, pGapSafe, pipeD, ground);
+                    postMeta[i] = meta;
+
+                    // 포스트 상/하 캡
+                    if (POST_CFG.makePostTopCap) {
+                        const capTop = createMesh(new THREE.BoxGeometry(meta.capLen, bT, bW), 0x555555);
+                        capTop.position.set(posX, H, POST_CFG.postZ);
+                        railingGroup.add(capTop);
+                    }
+                    if (POST_CFG.makePostBotCap) {
+                        const capBot = createMesh(new THREE.BoxGeometry(meta.capLen, bT, bW), 0x555555);
+                        capBot.position.set(posX, ground + bT / 2, POST_CFG.postZ);
+                        railingGroup.add(capBot);
+                    }
+                }
+            }
+
+            // 2) 구간 난간
+            if (VIEW.showRails) {
+                for (let i = 0; i < numSections; i++) {
+                    const posX = i * actualInterval;
+                    const center = posX + actualInterval / 2;
+
+                    let barLen = actualInterval;
+
+                    if (VIEW.showPosts) {
+                        // (A) 받침(헤드/플레이트) 기준 컷
+                        const left = postMeta[i];
+                        const right = postMeta[i + 1];
+
+                        const cutBaseL = (POST_CFG.barCutUseHeadW ?? true) ? left.headW : left.basePlateW;
+                        const cutBaseR = (POST_CFG.barCutUseHeadW ?? true) ? right.headW : right.basePlateW;
+                        const cutX = Math.max(cutBaseL, cutBaseR) / 2 + (POST_CFG.barCutExtra ?? 0);
+
+                        // (B) 캡 기준 컷(좌/우 캡이 겹치지 않게)
+                        const capHalfL = (left.capLen ?? 0) / 2;
+                        const capHalfR = (right.capLen ?? 0) / 2;
+                        const capHalf = Math.max(capHalfL, capHalfR) + (POST_CFG.railCapClearance ?? 0);
+
+                        const endCut = Math.max(cutX, capHalf);
+                        barLen = Math.max((POST_CFG.railMinLen ?? 80), actualInterval - 2 * endCut);
+                    }
+
+                    const topBar = createMesh(new THREE.BoxGeometry(barLen, bT, bW), 0x555555);
+                    topBar.position.set(center, H, POST_CFG.postZ);
+                    railingGroup.add(topBar);
+
+                    const botBar = createMesh(new THREE.BoxGeometry(barLen, bT, bW), 0x555555);
+                    botBar.position.set(center, ground + bT / 2, POST_CFG.postZ);
+                    railingGroup.add(botBar);
+
+                    // 구간 내 살
+                    const netWidth = actualInterval - pGapSafe;
+                    const subCount = Math.max(0, Math.floor(netWidth / pGapSafe) - 1);
+                    const subSpacing = netWidth / (subCount + 1);
+
+                    for (let j = 1; j <= subCount; j++) {
+                        const subX = posX + (pGapSafe / 2) + (subSpacing * j);
+                        const picket = createMesh(new THREE.CylinderGeometry(pipeD / 2, pipeD / 2, picketH, 16), 0xbbbbbb);
+                        picket.position.set(subX, picketY, POST_CFG.postZ);
+                        railingGroup.add(picket);
+                    }
+                }
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = (window.innerWidth - 320) / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth - 320, window.innerHeight);
+
+            // fixed header 보정(사이드바 폭 변경 시)
+            const topbar = document.querySelector('.topbar');
+            if (topbar) topbar.style.left = '320px';
+        });
+
+        init();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+
+</html>
