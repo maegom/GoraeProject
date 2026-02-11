@@ -350,7 +350,8 @@
             const loadingScreen = document.getElementById('loading');
             loadingScreen.style.visibility = 'visible';
 
-            const rawUrl = 'https://dl.dropboxusercontent.com/scl/fi/y395rlm5m9mhu67b52g15/SampleHuman.glb?rlkey=idzzqtoc993laykunl3ey7oyx';
+            const rawUrl = '../../shared/model/SampleHuman.glb';
+
 
             loader.load(rawUrl, (gltf) => {
                 humanModel = gltf.scene;
