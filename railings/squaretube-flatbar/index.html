@@ -541,32 +541,45 @@
     }
 
     function addRectFrame(centerX, yMid, innerW, innerH, barW, barT, z, color) {
-      // innerW: 프레임 가로폭(X방향), innerH: 프레임 세로높이(Y방향)
-      const vLen = Math.max(10, innerH); // 세로 부재 길이(Y)
-      const hLen = Math.max(10, innerW); // 가로 부재 길이(X)
+  // innerW: 좌/우 세로부재 "중심-중심" 거리
+  // innerH: 상/하 가로부재 "중심-중심" 거리(= 프레임 높이)
 
-      // ✅ 세로 부재(좌/우): 두께(X)=barT, 길이(Y)=vLen, 폭(Z)=barW
-      const vGeom = new THREE.BoxGeometry(barT, vLen, barW);
+  const hLen = Math.max(10, innerW);     // 세로부재 중심 간격(가로 폭)
+  const vLen = Math.max(10, innerH);     // 가로부재 중심 간격(세로 높이)
 
-      const left = createMesh(vGeom, color);
-      left.position.set(centerX - (hLen / 2), yMid, z);
-      railingGroup.add(left);
+  // ✅ 원하는 보정값
+  const vLenFixed = vLen + barT;        // 세로부재: 위/아래로 barT/2씩 더 => +barT
+  const hLenFixed = Math.max(10, hLen - barT); // 가로부재: 좌/우로 barT/2씩 줄여 => -barT
 
-      const right = createMesh(vGeom, color);
-      right.position.set(centerX + (hLen / 2), yMid, z);
-      railingGroup.add(right);
+  // =========================
+  // 1) 세로 부재(좌/우)
+  // =========================
+  // 두께(X)=barT, 길이(Y)=vLenFixed, 폭(Z)=barW
+  const vGeom = new THREE.BoxGeometry(barT, vLenFixed, barW);
 
-      // ✅ 가로 부재(상/하): 길이(X)=hLen, 두께(Y)=barT, 폭(Z)=barW  ← 여기!
-      const hGeom = new THREE.BoxGeometry(hLen, barT, barW);
+  const left = createMesh(vGeom, color);
+  left.position.set(centerX - (hLen / 2), yMid, z); // 중심 위치는 그대로
+  railingGroup.add(left);
 
-      const top = createMesh(hGeom, color);
-      top.position.set(centerX, yMid + (vLen / 2), z);
-      railingGroup.add(top);
+  const right = createMesh(vGeom, color);
+  right.position.set(centerX + (hLen / 2), yMid, z);
+  railingGroup.add(right);
 
-      const bot = createMesh(hGeom, color);
-      bot.position.set(centerX, yMid - (vLen / 2), z);
-      railingGroup.add(bot);
-    }
+  // =========================
+  // 2) 가로 부재(상/하)
+  // =========================
+  // 길이(X)=hLenFixed, 두께(Y)=barT, 폭(Z)=barW
+  const hGeom = new THREE.BoxGeometry(hLenFixed, barT, barW);
+
+  const top = createMesh(hGeom, color);
+  top.position.set(centerX, yMid + (vLen / 2), z); // 중심 위치는 그대로
+  railingGroup.add(top);
+
+  const bot = createMesh(hGeom, color);
+  bot.position.set(centerX, yMid - (vLen / 2), z);
+  railingGroup.add(bot);
+}
+
 
     /**
  * ✅ ㅁ자 모듈을 "섹션(받침 사이)" 안에 반복 배치하는 함수
