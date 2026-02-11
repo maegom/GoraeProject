@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>각관 + 평철프레임 | 고래이음 난간 시뮬레이터</title>
+
+  <link rel="stylesheet" href="../../shared/css/app.css" />
+
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      font-family: 'Pretendard', sans-serif;
+      background: #f8f9fa;
+      color: #333;
+    }
+
+    #sidebar {
+      width: 320px;
+      padding: 18px 18px 22px;
+      background: #fff;
+      height: 100vh;
+      overflow-y: auto;
+      box-shadow: 2px 0 15px rgba(0, 0, 0, .05);
+      z-index: 100;
+    }
+
+    #canvas-container {
+      flex-grow: 1;
+      position: relative;
+      background: #eee;
+    }
+
+    .input-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+
+    input[type="number"]:focus {
+      border-color: #007bff;
+      outline: none;
+    }
+
+    .pageTitle {
+      font-size: 16px;
+      font-weight: 900;
+      margin: 8px 0 4px;
+    }
+
+    .pageSub {
+      font-size: 12px;
+      color: #777;
+      margin: 0 0 14px;
+      line-height: 1.5;
+    }
+
+    .row2 {
+      display: flex;
+      gap: 8px;
+    }
+
+    .row2 input {
+      width: 50%;
+    }
+
+    .toggle-row {
+      display: flex;
+      gap: 10px;
+      margin: 12px 0 16px;
+    }
+
+    .btn-toggle {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid #e0e0e0;
+      background: #f3f5f7;
+      color: #222;
+      font-weight: 900;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .btn-toggle.on {
+      background: #e7f1ff;
+      border-color: #a8ccff;
+      color: #0b57d0;
+    }
+
+    .info-box {
+      font-size: 11px;
+      color: #888;
+      line-height: 1.6;
+      background: #f1f3f5;
+      padding: 10px;
+      border-radius: 10px;
+      margin-top: 14px;
+    }
+
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, .82);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 200;
+      visibility: hidden;
+      font-weight: 900;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 900;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #f1f3f5;
+      color: #495057;
+      margin-top: 8px;
+    }
+
+    .hr {
+      border: 0;
+      border-top: 1px solid #e9ecef;
+      margin: 14px 0;
+    }
+
+    .sectionTitle {
+      font-size: 12px;
+      font-weight: 900;
+      color: #495057;
+      margin: 6px 0 10px;
+      letter-spacing: 0.2px;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar" style="position:fixed; left:320px; right:0; top:0;">
+    <a class="brand" href="#" id="brandLink">고래이음</a>
+    <nav class="nav">
+      <a href="#" id="homeLink">Home</a>
+      <a class="active" href="../">Back</a>
+    </nav>
+  </header>
+
+  <aside id="sidebar">
+    <div class="badge">Railing / SquareTube + Flatbar Frame</div>
+    <div class="pageTitle">각관 + 평철 모듈 난간</div>
+    <p class="pageSub">
+      
+      값 변경 시 3D 모델이 실시간 업데이트됩니다.
+    </p>
+
+    <!-- ✅ 표시 토글(맨 위 고정) -->
+    <div class="toggle-row">
+      <button id="btnPosts" class="btn-toggle on" type="button">받침 ON</button>
+      <button id="btnRails" class="btn-toggle on" type="button">난간 ON</button>
+    </div>
+
+    <hr class="hr" />
+    <div class="sectionTitle">전체 설정</div>
+
+    <div class="input-group">
+      <label>전체 길이 (mm)</label>
+      <input type="number" id="totalL" value="3000">
+    </div>
+
+    <div class="input-group">
+      <label>난간 높이 (mm)</label>
+      <input type="number" id="height" value="1200">
+    </div>
+
+    <hr class="hr" />
+    <div class="sectionTitle">레일(각관) 설정</div>
+
+    <div class="input-group">
+      <label>각관 외경 W/H (mm)</label>
+      <div class="row2">
+        <input type="number" id="tubeW" value="50" title="각관 폭 W">
+        <input type="number" id="tubeH" value="30" title="각관 높이 H">
+      </div>
+    </div>
+
+    <div class="input-group">
+      <label>각관 두께 (mm)</label>
+      <input type="number" id="tubeT" value="2.3" step="0.1">
+    </div>
+
+    <hr class="hr" />
+    <div class="sectionTitle">내부 프레임(ㅁ자) 설정</div>
+
+    <!-- (기존 id 유지: frameGap) -->
+    <div class="input-group">
+      <label>내부 프레임 기본 간격 (mm)</label>
+      <input type="number" id="frameGap" value="100">
+    </div>
+
+    <div class="input-group">
+      <label>평철 폭 / 두께 (mm) (프레임용)</label>
+      <div class="row2">
+        <input type="number" id="barW" value="45" title="평철 폭">
+        <input type="number" id="barT" value="6" title="평철 두께">
+      </div>
+    </div>
+
+    <div class="input-group">
+      <label>ㅁ자 모듈 가로폭 (mm) <span style="font-weight:400;">(세로부재 중심-중심)</span></label>
+      <input type="number" id="moduleW" value="100">
+    </div>
+
+    <div class="input-group">
+      <label>ㅁ자 모듈 간격 (mm) <span style="font-weight:400;">(모듈-모듈 사이)</span></label>
+      <input type="number" id="moduleGap" value="100">
+    </div>
+
+    <hr class="hr" />
+    <div class="sectionTitle">포스트(기둥) 설정</div>
+
+    <div class="input-group">
+      <label>포스트(기둥) 간격 (mm)</label>
+      <input type="number" id="postInt" value="1000">
+    </div>
+
+    <div class="input-group">
+      <label>바닥 띄움(받침 높이) (mm)</label>
+      <input type="number" id="ground" value="60">
+    </div>
+
+    <div class="input-group">
+      <label>포스트 ㅗ 헤드 길이 (mm)</label>
+      <input type="number" id="postHeadLen" value="180">
+    </div>
+
+    <hr class="hr" />
+    <div class="sectionTitle">표현(색상)</div>
+
+    <div class="input-group">
+      <label>전체 색상</label>
+      <input type="color" id="allColor" value="#666666" />
+    </div>
+
+    <div class="info-box">
+      * Home/Brand는 Cafe24로 이동하도록 고정 가능 (HOME_URL).<br>
+      * 프레임(ㅁ자)은 각관 내부에 반복 배치됩니다.<br>
+      * 추후: 프레임 두께/방향, 레일 컷(겹침) 로직, 앙카/홀 등 세부 고도화 가능.
+    </div>
+  </aside>
+
+
+  <main id="canvas-container" style="padding-top:56px;">
+    <div id="loading" class="loading-overlay">모델 데이터를 불러오는 중...</div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+  <script>
+    let scene, camera, renderer, controls, railingGroup, humanModel;
+
+    // ✅ 여기만 바꾸면 Home/Brand 이동 URL 변경
+    const HOME_URL = "https://goraeeum.cafe24.com/";
+
+    const VIEW = { showPosts: true, showRails: true };
+
+    // ==============================
+    // 포스트 설계(코드에서만 수정)
+    // ==============================
+    const POST_CFG = {
+      // 포스트(ㅗ) 기본 치수(일단 간단하게)
+      stemWScaleToTube: 0.35,     // stem 가로폭 = tubeW * scale
+      stemDScaleToTube: 0.35,     // stem 깊이   = tubeH * scale
+      headTLinkedToBarT: true,    // head 두께를 barT에 연동
+      baseTLinkedToBarT: true,    // base 두께를 barT에 연동
+      baseTScale: 1.4,
+      headTScale: 1.0,
+
+      // 앙카(시각용)
+      showAnchors: true,
+      anchorRad: 6,
+      anchorHeight: 10,
+      holeOffset: 35,
+      holeCount: 4,
+      holeSegs: 24,
+
+      postZ: 0,
+    };
+
+    const SLAT_CFG = {
+      type: "RECT_FRAME", // "RECT_FRAME" | "VERT_PIPES" | "H_BARS"
+      // 공통
+      color: 0x999999,
+
+      // 평철(프레임/바)용
+      barW: null, // null이면 UI의 barW 사용
+      barT: null, // null이면 UI의 barT 사용
+
+      // 파이프 살(세로 파이프 등)용
+      pipeOD: 16,     // 외경 (mm)
+      pipeT: 1.5,     // 두께 (mm)
+      pipeCount: 8,   // 구간당 개수
+      pipeInset: 8,   // 좌우 여유
+    };
+
+    const COLORS = {
+      rail: 0x666666,
+      slat: 0x999999,
+      post: 0x444444,
+      base: 0x333333,
+      anchor: 0x111111,
+    };
+
+    // ✅ 전체 컬러(레이아웃 전체 공통 색) - 컬러피커 값이 여기에 들어감
+    const THEME = {
+      all: 0x666666, // 기본값(= #666666)
+    };
+
+    // ✅ "#rrggbb" -> 0xRRGGBB 변환
+    function hexToInt(hex) {
+      return parseInt(hex.replace("#", ""), 16);
+    }
+
+    // ✅ 그룹 안의 모든 Mesh/Material 색을 한 번에 변경
+    function applyColorToGroup(group, colorInt) {
+      group.traverse((obj) => {
+        if (!obj.isMesh) return;
+
+        // material이 배열일 수도 있어서 둘 다 처리
+        const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+        mats.forEach((m) => {
+          if (!m) return;
+          if (m.color) m.color.setHex(colorInt);
+          // 금속/거칠기 유지(기존값 그대로), 필요하면 여기서 통일도 가능
+          // m.metalness = 0.6;
+          // m.roughness = 0.3;
+          m.needsUpdate = true;
+        });
+      });
+    }
+
+
+
+    function init() {
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xf1f3f5);
+
+      camera = new THREE.PerspectiveCamera(45, (window.innerWidth - 320) / window.innerHeight, 10, 50000);
+      camera.position.set(2500, 1500, 3000);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth - 320, window.innerHeight);
+      document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      dirLight.position.set(2000, 4000, 2000);
+      scene.add(dirLight);
+
+      scene.add(new THREE.GridHelper(10000, 50, 0xd1d1d1, 0xe1e1e1));
+
+      railingGroup = new THREE.Group();
+      scene.add(railingGroup);
+
+      wireUI();
+      loadHuman();
+      renderRailing();
+    }
+
+    function wireUI() {
+      const btnPosts = document.getElementById('btnPosts');
+      const btnRails = document.getElementById('btnRails');
+
+      // Home/Brand 링크 고정
+      const homeLink = document.getElementById('homeLink');
+      if (homeLink) homeLink.href = HOME_URL;
+      const brandLink = document.getElementById('brandLink');
+      if (brandLink) brandLink.href = HOME_URL;
+
+      const syncBtn = (btn, onText, offText, isOn) => {
+        btn.classList.toggle('on', isOn);
+        btn.textContent = isOn ? onText : offText;
+      };
+
+      const syncAll = () => {
+        syncBtn(btnPosts, '포스트 ON', '포스트 OFF', VIEW.showPosts);
+        syncBtn(btnRails, '난간 ON', '난간 OFF', VIEW.showRails);
+      };
+      syncAll();
+
+      btnPosts.addEventListener('click', () => { VIEW.showPosts = !VIEW.showPosts; syncAll(); renderRailing(); });
+      btnRails.addEventListener('click', () => { VIEW.showRails = !VIEW.showRails; syncAll(); renderRailing(); });
+
+      // ✅ 전체 색상 컬러피커
+      const allColor = document.getElementById("allColor");
+      if (allColor) {
+        allColor.addEventListener("input", () => {
+          THEME.all = hexToInt(allColor.value);
+
+          // 이미 만들어진 모델에 바로 적용
+          if (railingGroup) applyColorToGroup(railingGroup, THEME.all);
+        });
+      }
+
+
+      document.querySelectorAll('input').forEach(el => el.addEventListener('input', renderRailing));
+    }
+
+    function loadHuman() {
+      const loader = new THREE.GLTFLoader();
+      const loadingScreen = document.getElementById('loading');
+      loadingScreen.style.visibility = 'visible';
+
+      const rawUrl = 'https://dl.dropboxusercontent.com/scl/fi/y395rlm5m9mhu67b52g15/SampleHuman.glb?rlkey=idzzqtoc993laykunl3ey7oyx';
+
+      loader.load(rawUrl, (gltf) => {
+        humanModel = gltf.scene;
+        humanModel.scale.set(25, 25, 25);
+        humanModel.position.set(300, 0, -500);
+        humanModel.rotation.y = Math.PI / 4;
+        scene.add(humanModel);
+        loadingScreen.style.visibility = 'hidden';
+        loadingScreen.innerText = '모델 데이터를 불러오는 중...';
+      }, (xhr) => {
+        if (!xhr.total) return;
+        const percent = Math.round((xhr.loaded / xhr.total) * 100);
+        loadingScreen.innerText = `모델 로딩 중... (${percent}%)`;
+      }, (error) => {
+        console.error('모델 로드 실패:', error);
+        loadingScreen.innerText = '사람 모델 로드 실패';
+      });
+    }
+
+    function createMesh(geom, color) {
+      const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.6, roughness: 0.3 });
+      return new THREE.Mesh(geom, mat);
+    }
+
+    function makeHollowPipeX(len, od, t, color) {
+      const rOuter = od / 2;
+      const rInner = Math.max(0.1, rOuter - t);
+
+      // 외피(바깥 원통)
+      const outerGeo = new THREE.CylinderGeometry(rOuter, rOuter, len, 32, 1, true);
+      const outer = createMesh(outerGeo, color);
+      outer.rotation.z = Math.PI / 2; // 기본 Y축 원통을 X방향으로
+
+      // 내피(안쪽 원통) - 약간 길게 해서 z-fighting 줄이기
+      const innerGeo = new THREE.CylinderGeometry(rInner, rInner, len + 0.5, 32, 1, true);
+      const innerMat = new THREE.MeshStandardMaterial({
+        color,
+        metalness: 0.6,
+        roughness: 0.3,
+        side: THREE.BackSide // 안쪽 면이 보이게
+      });
+      const inner = new THREE.Mesh(innerGeo, innerMat);
+      inner.rotation.z = Math.PI / 2;
+
+      const g = new THREE.Group();
+      g.add(outer);
+      g.add(inner);
+      return g;
+    }
+
+    function makeHollowPipeY(len, od, t, color) {
+      const rOuter = od / 2;
+      const rInner = Math.max(0.1, rOuter - t);
+
+      const outerGeo = new THREE.CylinderGeometry(rOuter, rOuter, len, 32, 1, true);
+      const outer = createMesh(outerGeo, color);
+
+      const innerGeo = new THREE.CylinderGeometry(rInner, rInner, len + 0.5, 32, 1, true);
+      const innerMat = new THREE.MeshStandardMaterial({
+        color,
+        metalness: 0.6,
+        roughness: 0.3,
+        side: THREE.BackSide
+      });
+      const inner = new THREE.Mesh(innerGeo, innerMat);
+
+      const g = new THREE.Group();
+      g.add(outer);
+      g.add(inner);
+      return g;
+    }
+
+
+
+
+    // ✅ 각관 레일(상/하) 생성용
+    function makeRectTube(len, w, h, color) {
+      // 단순 외형만: Box로 표현(두께 표현은 추후 업그레이드)
+      const g = new THREE.BoxGeometry(len, h, w); // (X 길이, Y 높이, Z 폭)
+      return createMesh(g, color);
+    }
+
+    function addRectFrame(centerX, yMid, innerW, innerH, barW, barT, z, color) {
+      // innerW: 프레임 가로폭(X방향), innerH: 프레임 세로높이(Y방향)
+      const vLen = Math.max(10, innerH); // 세로 부재 길이(Y)
+      const hLen = Math.max(10, innerW); // 가로 부재 길이(X)
+
+      // ✅ 세로 부재(좌/우): 두께(X)=barT, 길이(Y)=vLen, 폭(Z)=barW
+      const vGeom = new THREE.BoxGeometry(barT, vLen, barW);
+
+      const left = createMesh(vGeom, color);
+      left.position.set(centerX - (hLen / 2), yMid, z);
+      railingGroup.add(left);
+
+      const right = createMesh(vGeom, color);
+      right.position.set(centerX + (hLen / 2), yMid, z);
+      railingGroup.add(right);
+
+      // ✅ 가로 부재(상/하): 길이(X)=hLen, 두께(Y)=barT, 폭(Z)=barW  ← 여기!
+      const hGeom = new THREE.BoxGeometry(hLen, barT, barW);
+
+      const top = createMesh(hGeom, color);
+      top.position.set(centerX, yMid + (vLen / 2), z);
+      railingGroup.add(top);
+
+      const bot = createMesh(hGeom, color);
+      bot.position.set(centerX, yMid - (vLen / 2), z);
+      railingGroup.add(bot);
+    }
+
+    /**
+ * ✅ ㅁ자 모듈을 "섹션(포스트 사이)" 안에 반복 배치하는 함수
+ *
+ * 목표:
+ * - 섹션 내부 유효 길이(rail과 안 겹치게 cut 반영) 안에서
+ * - moduleW(모듈 폭) + moduleGap(모듈 간격) 규칙으로
+ * - 가능한 모듈 개수 N을 계산해서
+ * - 섹션 중앙 기준으로 전체 패턴을 센터링 배치
+ *
+ * 그러면 자동으로:
+ * - N이 홀수 -> 모듈 하나의 중심이 섹션 중앙
+ * - N이 짝수 -> 모듈과 모듈 사이 "간격 중심"이 섹션 중앙
+ */
+    function addRectFrameModulesCentered({
+      sectionX0,     // 섹션 시작 X (포스트~포스트 기준)
+      sectionLen,    // 섹션 길이 (포스트 간격 actualInterval)
+      cut,           // 포스트 헤드 겹침 방지용 컷(좌우)
+      yTop,          // 프레임 상단 가로부재 중심 Y
+      yBot,          // 프레임 하단 가로부재 중심 Y
+      z,
+      moduleW,       // ✅ 모듈 폭(세로부재 중심-중심)
+      moduleGap,     // ✅ 모듈 간격(모듈-모듈 사이)
+      barW,
+      barT,
+      color
+    }) {
+      // ====== 1) 섹션 내부 유효 구간 (포스트 헤드/베이스랑 겹치지 않도록 컷 적용) ======
+      const innerX0 = sectionX0 + cut;
+      const innerLen = Math.max(0, sectionLen - 2 * cut);
+
+      if (innerLen < moduleW) return; // 모듈 1개도 못 넣는 경우
+
+      // ====== 2) 모듈 배치 규칙 ======
+      // 모듈 N개를 넣으면 필요한 길이:
+      // totalUsed = N*moduleW + (N-1)*moduleGap
+      // 조건: totalUsed <= innerLen
+      // -> N <= (innerLen + moduleGap) / (moduleW + moduleGap)
+      const pitch = moduleW + moduleGap; // 모듈 중심 간 간격(중요)
+      const N = Math.max(1, Math.floor((innerLen + moduleGap) / pitch));
+
+      const totalUsed = (N * moduleW) + ((N - 1) * moduleGap);
+
+      // ====== 3) 섹션 중앙 기준 "전체 패턴 센터링" ======
+      // 섹션 유효구간의 중앙
+      const innerCenterX = innerX0 + innerLen / 2;
+
+      // 첫 번째 모듈의 "중심" X
+      // 패턴의 전체 길이(totalUsed)를 innerCenterX에 센터링:
+      // 패턴 시작 = innerCenterX - totalUsed/2
+      // 첫 모듈 중심 = 패턴 시작 + moduleW/2
+      const firstCenterX = (innerCenterX - totalUsed / 2) + (moduleW / 2);
+
+      // 세로부재 길이/중앙
+      const vLen = Math.max(10, (yTop - yBot));
+      const yMid = (yTop + yBot) / 2;
+
+      // ====== 4) 모듈 N개 생성 ======
+      for (let i = 0; i < N; i++) {
+        const cx = firstCenterX + i * pitch;
+
+        // 안전: 혹시 부동소수점으로 살짝 넘어가면 스킵
+        if (cx < innerX0 - 0.01) continue;
+        if (cx > innerX0 + innerLen + 0.01) continue;
+
+        // ✅ ㅁ자 모듈 1개 생성
+        // addRectFrame의 innerW는 "좌/우 세로부재 중심간 거리"로 쓰고 있으니 moduleW 그대로 넣음
+        addRectFrame(
+          cx,
+          yMid,
+          moduleW,   // ✅ 모듈 폭(세로부재 중심-중심)
+          vLen,      // 모듈 높이
+          barW,
+          barT,
+          z,
+          color
+        );
+      }
+    }
+
+
+    // ✅ ㅁ자 "모듈" 반복 프레임
+    // - ㅁ자 모듈이 frameGap 피치로 반복 배치됨
+    // - 모듈 폭(세로부재 중심 간격)을 frameGap에 연동
+    // - 즉, 모듈의 좌/우 세로부재 중심이 (x, x+frameGap)로 고정되어 간격이 항상 일정
+    function addRectFrameModules({
+      x0,            // 구간 시작 X
+      sectionLen,    // 구간 길이
+      yTop,          // 프레임 상단(가로부재 중심 Y)
+      yBot,          // 프레임 하단(가로부재 중심 Y)
+      z,
+      frameGap,      // ✅ 모듈 피치(=세로부재 중심 간격)
+      barW,          // 평철 폭(Z)
+      barT,          // 평철 두께(X/Y)
+      color
+    }) {
+      const gap = Math.max(40, frameGap);
+      const len = Math.max(80, sectionLen);
+
+      // 모듈의 "세로부재 간 중심거리" = gap
+      // addRectFrame는 innerW를 "좌우 세로부재 중심거리"로 쓰고 있으니 그대로 gap을 넣어도 됨.
+      // (내부 빈공간은 gap - barT 정도로 자연스럽게 유지됨)
+      const moduleW_centerToCenter = gap;
+
+      // 모듈 중심은 "두 세로부재의 가운데"
+      // 왼쪽 세로부재 중심 x = centerX - gap/2
+      // 오른쪽 세로부재 중심 x = centerX + gap/2
+      const moduleCenterStep = gap; // 모듈 중심 간 거리도 gap으로 맞추면 “세로부재 피치”가 유지됨
+
+      // 구간 안쪽에 모듈이 너무 끝에 딱 붙으면 보기 안좋아서,
+      // 첫 모듈 중심을 gap/2 지점으로 시작 (좌측 세로부재가 x0에 오게 됨)
+      let centerX = x0 + moduleW_centerToCenter / 2;
+
+      // 마지막 모듈의 오른쪽 세로부재가 구간을 넘지 않게:
+      const maxCenterX = x0 + len - moduleW_centerToCenter / 2;
+
+      while (centerX <= maxCenterX + 0.001) {
+        const yMid = (yTop + yBot) / 2;
+        const vLen = Math.max(10, (yTop - yBot)); // 세로부재 길이
+
+        // ✅ 여기서 addRectFrame를 호출해 "ㅁ자 모듈" 하나 생성
+        // innerW에 gap을 넣어서 세로부재 중심간 간격을 고정
+        addRectFrame(
+          centerX,
+          yMid,
+          moduleW_centerToCenter, // ✅ ㅁ자 가로폭이 frameGap에 연동됨(핵심)
+          vLen,
+          barW,
+          barT,
+          z,
+          color
+        );
+
+        centerX += moduleCenterStep; // 다음 모듈
+      }
+    }
+
+
+    function addSlatsInSection({
+      x0, sectionLen, yTop, yBot, z,
+      tubeW, tubeT, barW, barT,
+      cut = 0,           // ✅ 섹션 양 끝에서 피해야 하는 거리(포스트 stem 회피용)
+    }) {
+
+      // =========================================================
+      // ✅ "살(SLAT)" 타입 선택
+      // - RECT_FRAME : ㅁ자 프레임을 "연속 사다리"처럼 표현
+      // - VERT_PIPES : 세로 파이프 살
+      // - H_BARS     : 가로 평철 살
+      // =========================================================
+      const type = SLAT_CFG.type;
+
+      // 색/규격 오버라이드(코드에서 강제하고 싶을 때)
+      const color = SLAT_CFG.color ?? 0x999999;
+      const useBarW = SLAT_CFG.barW ?? barW; // 평철 폭(Z) : 필요 시 SLAT_CFG에서 override
+      const useBarT = SLAT_CFG.barT ?? barT; // 평철 두께(Y/X) : 필요 시 SLAT_CFG에서 override
+      if (type === "RECT_FRAME") {
+        // ✅ UI 값
+        const moduleW = Math.max(40, +document.getElementById('moduleW').value || 120);
+        const moduleGap = Math.max(0, +document.getElementById('moduleGap').value || 60);
+
+        // ✅ yTop / yBot는 (상부각관 하단면 / 하부각관 상단면)이 들어온 상태
+        // 가로부재 중심은 barT/2 만큼 안쪽으로 넣어주는 게 안전
+        const topY = yTop - (useBarT / 2);
+        const botY = yBot + (useBarT / 2);
+
+        // ✅ 포스트가 있으면 rails에서 썼던 cut 값을 여기에도 동일 적용해야 “겹침”이 안 남
+        // 섹션별 cut은 renderRailing에서 계산했던 값과 동일하게 맞추는 게 정답.
+        // 현재 addSlatsInSection에 cut이 전달되지 않으니, 여기서 간단히 "포스트 헤드 기준"으로 계산:
+        // (정교하게 하려면 renderRailing에서 cut을 계산해 같이 넘겨주는 구조가 가장 깔끔함)
+
+        addRectFrameModulesCentered({
+          sectionX0: x0,
+          sectionLen,
+          cut,                // ✅ 포스트 헤드 겹침 방지
+          yTop: topY,
+          yBot: botY,
+          z,
+          moduleW,
+          moduleGap,
+          barW: useBarW,
+          barT: useBarT,
+          color
+        });
+
+        return;
+      }
+
+      // =========================================================
+      // 아래 2종은 "내부 영역" 계산이 필요해서 여기서 계산
+      // - innerTopY / innerBotY : 살이 배치될 유효 높이 영역
+      // =========================================================
+
+      // 내부 유효 높이(대략): 평철 폭(useBarW)을 고려해서 위/아래 살짝 안쪽으로
+      const innerTopY = yTop - (useBarW / 2);
+      const innerBotY = yBot + (useBarW / 2);
+      const innerH = Math.max(20, innerTopY - innerBotY);
+
+      // (참고) 내부 유효 폭(Z)은 필요하면 여기서 계산해서 쓸 수 있음
+      // const innerW = Math.max(20, tubeW - (tubeT * 2) - useBarW);
+
+      // =========================================================
+      // 2) ✅ VERT_PIPES (세로 파이프 살)
+      // =========================================================
+      if (type === "VERT_PIPES") {
+        const od = SLAT_CFG.pipeOD;            // 파이프 외경
+        const t = SLAT_CFG.pipeT;              // 파이프 두께
+        const n = Math.max(1, SLAT_CFG.pipeCount);
+        const inset = SLAT_CFG.pipeInset;      // 좌우 여유
+
+        const usable = Math.max(20, sectionLen - inset * 2);
+        const spacing = usable / (n + 1);
+
+        for (let i = 1; i <= n; i++) {
+          const px = x0 + inset + spacing * i;
+          const yMid = (innerTopY + innerBotY) / 2;
+
+          const pipe = makeHollowPipeY(innerH, od, t, color);
+          pipe.position.set(px, yMid, z);
+          railingGroup.add(pipe);
+        }
+        return;
+      }
+
+      // =========================================================
+      // 3) ✅ H_BARS (가로 평철 살)
+      // =========================================================
+      if (type === "H_BARS") {
+        const n = 4; // 가로살 줄 수 (추후 UI로 빼도 됨)
+
+        for (let i = 0; i < n; i++) {
+          const yy = innerBotY + (innerH * (i + 1)) / (n + 1);
+
+          // BoxGeometry(X, Y, Z) = (길이, 두께, 폭)
+          const bar = createMesh(
+            new THREE.BoxGeometry(sectionLen * 0.92, useBarT, useBarW),
+            color
+          );
+          bar.position.set(x0 + sectionLen / 2, yy, z);
+          railingGroup.add(bar);
+        }
+        return;
+      }
+
+      // =========================================================
+      // 타입이 이상하면 아무것도 안 만듦
+      // =========================================================
+    }
+
+
+    // ✅ 포스트(ㅗ): 바닥판 + 수직 stem + 상부 head + (옵션) 앙카
+    function addPostT(posX, ground, tubeW, tubeH, barT, postHeadLen, postZ) {
+      const baseT = POST_CFG.baseTLinkedToBarT ? Math.max(2, barT * POST_CFG.baseTScale) : 10;
+      const headT = POST_CFG.headTLinkedToBarT ? Math.max(2, barT * POST_CFG.headTScale) : 6;
+
+      const baseW = postHeadLen;
+      const baseD = Math.max(tubeW, tubeH) * 1.2;
+
+      const base = createMesh(new THREE.BoxGeometry(baseW, baseT, baseD), 0x333333);
+      base.position.set(posX, baseT / 2, postZ);
+      railingGroup.add(base);
+
+      const stemW = Math.max(6, tubeW * POST_CFG.stemWScaleToTube);
+      const stemD = Math.max(6, tubeH * POST_CFG.stemDScaleToTube);
+      const stemH = ground;
+
+      const stem = createMesh(new THREE.BoxGeometry(stemW, stemH, stemD), 0x444444);
+      stem.position.set(posX, stemH / 2, postZ);
+      railingGroup.add(stem);
+
+      const head = createMesh(new THREE.BoxGeometry(postHeadLen, headT, baseD * 0.55), 0x444444);
+      head.position.set(posX, ground + headT / 2, postZ);
+      railingGroup.add(head);
+
+      // 앙카(수직, 시각용)
+      if (POST_CFG.showAnchors) {
+        const off = POST_CFG.holeOffset;
+        const holes = (POST_CFG.holeCount === 2)
+          ? [[-off, 0], [off, 0]]
+          : [[-off, -off], [off, -off], [-off, off], [off, off]];
+
+        const anchorR = POST_CFG.anchorRad ?? 6;
+        const anchorH = POST_CFG.anchorHeight ?? 120;
+        const anchorGeo = new THREE.CylinderGeometry(anchorR, anchorR, anchorH, POST_CFG.holeSegs);
+
+        holes.forEach(([hx, hz]) => {
+          const a = createMesh(anchorGeo, 0x111111);
+          a.position.set(posX + hx, baseT + anchorH / 2, postZ + hz);
+          railingGroup.add(a);
+        });
+      }
+
+      return { headLen: postHeadLen };
+    }
+
+    function renderRailing() {
+      while (railingGroup.children.length > 0) railingGroup.remove(railingGroup.children[0]);
+
+      const L = Math.max(100, +document.getElementById('totalL').value || 3000);
+      const H = Math.max(200, +document.getElementById('height').value || 1200);
+
+      const tubeW = Math.max(20, +document.getElementById('tubeW').value || 50);
+      const tubeH = Math.max(20, +document.getElementById('tubeH').value || 50);
+      const tubeT = Math.max(1, +document.getElementById('tubeT').value || 2.3);
+
+      const frameGap = Math.max(40, +document.getElementById('frameGap').value || 120);
+      const barW = Math.max(5, +document.getElementById('barW').value || 25);
+      const barT = Math.max(2, +document.getElementById('barT').value || 6);
+
+      const postInt = Math.max(200, +document.getElementById('postInt').value || 1000);
+      const ground = Math.max(0, +document.getElementById('ground').value || 60);
+      const postHeadLen = Math.max(60, +document.getElementById('postHeadLen').value || 180);
+
+      // 높이 배치
+      const yBotTube = ground + tubeH / 2;
+      const yTopTube = H - tubeH / 2;
+
+      // 섹션 계산
+      const numSections = Math.max(1, Math.round(L / postInt));
+      const actualInterval = L / numSections;
+
+      // 포스트 위치마다 메타 저장(레일 절단용)
+      const postMeta = new Array(numSections + 1).fill(null).map(() => ({ headLen: 0 }));
+
+      // 1) 포스트 생성
+      if (VIEW.showPosts) {
+        for (let i = 0; i <= numSections; i++) {
+          const x = i * actualInterval;
+          const meta = addPostT(x, ground, tubeW, tubeH, barT, postHeadLen, POST_CFG.postZ);
+          postMeta[i] = meta;
+        }
+      }
+
+      // 2) 레일(상/하 각관) + 내부 프레임(ㅁ자)
+      if (VIEW.showRails) {
+        for (let i = 0; i < numSections; i++) {
+          const x0 = i * actualInterval;
+          const center = x0 + actualInterval / 2;
+
+
+          // ✅ 레일은 포스트 "중심까지" 와야 하므로 섹션 전체 길이 그대로 사용
+          const railLen = actualInterval;
+
+
+          // 상부/하부 각관 레일
+          const topTube = makeRectTube(railLen, tubeW, tubeH, THEME.all);
+          topTube.position.set(center, yTopTube, POST_CFG.postZ);
+          railingGroup.add(topTube);
+
+          const botTube = makeRectTube(railLen, tubeW, tubeH, THEME.all);
+          botTube.position.set(center, yBotTube, POST_CFG.postZ);
+          railingGroup.add(botTube);
+
+          // ✅ ㅁ자 모듈(살)이 포스트 헤드가 아니라 "기둥(stem)"만 피하면 되므로,
+          // cut은 stem 반폭 + 약간의 여유만 주면 됨.
+          let slatCut = 0;
+          if (VIEW.showPosts) {
+            // stem(기둥) 폭: addPostT에서 쓰는 값과 동일한 방식으로 계산
+            const stemW = Math.max(6, tubeW * POST_CFG.stemWScaleToTube);
+
+            // 여유값(겹침 방지): barT/2 + 2mm 정도
+            slatCut = (stemW / 2) + (barT / 2) + 2;
+          }
+
+          addSlatsInSection({
+            x0,
+            sectionLen: actualInterval,
+            yTop: yTopTube - tubeH / 2,
+            yBot: yBotTube + tubeH / 2,
+            z: POST_CFG.postZ,
+            tubeW, tubeT, barW, barT
+          });
+
+        }
+      }
+      // ✅ 렌더링 후 항상 현재 테마색 적용(재렌더 시에도 유지)
+      applyColorToGroup(railingGroup, THEME.all);
+
+      // NOTE: tubeT(각관 두께)는 현재 외형(Box)만 표현해서 “시각용”으로 입력만 받고 있어.
+      // 다음 단계에서: 각관을 실제 두께(중공) 형태로 표현하거나 내측 치수 계산에 반영 가능.
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = (window.innerWidth - 320) / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth - 320, window.innerHeight);
+
+      const topbar = document.querySelector('.topbar');
+      if (topbar) topbar.style.left = '320px';
+    });
+
+    init();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+
+</html>
