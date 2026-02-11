@@ -167,7 +167,6 @@
     <div class="badge">Railing / SquareTube + Flatbar Frame</div>
     <div class="pageTitle">각관 + 평철 모듈 난간</div>
     <p class="pageSub">
-      
       값 변경 시 3D 모델이 실시간 업데이트됩니다.
     </p>
 
@@ -175,6 +174,15 @@
     <div class="toggle-row">
       <button id="btnPosts" class="btn-toggle on" type="button">받침 ON</button>
       <button id="btnRails" class="btn-toggle on" type="button">난간 ON</button>
+    </div>
+
+    <!-- ✅ 컬러피커를 토글 바로 아래로 이동 -->
+    <hr class="hr" />
+    <div class="sectionTitle">색상</div>
+
+    <div class="input-group">
+      <label>클릭하여 색을 변경할수 있습니다.</label>
+      <input type="color" id="allColor" value="#666666" />
     </div>
 
     <hr class="hr" />
@@ -209,12 +217,6 @@
     <hr class="hr" />
     <div class="sectionTitle">내부 프레임(ㅁ자) 설정</div>
 
-    <!-- (기존 id 유지: frameGap) -->
-    <div class="input-group">
-      <label>내부 프레임 기본 간격 (mm)</label>
-      <input type="number" id="frameGap" value="100">
-    </div>
-
     <div class="input-group">
       <label>평철 폭 / 두께 (mm) (프레임용)</label>
       <div class="row2">
@@ -234,10 +236,10 @@
     </div>
 
     <hr class="hr" />
-    <div class="sectionTitle">포스트(기둥) 설정</div>
+    <div class="sectionTitle">받침(기둥) 설정</div>
 
     <div class="input-group">
-      <label>포스트(기둥) 간격 (mm)</label>
+      <label>받침(기둥) 간격 (mm)</label>
       <input type="number" id="postInt" value="1000">
     </div>
 
@@ -247,24 +249,16 @@
     </div>
 
     <div class="input-group">
-      <label>포스트 ㅗ 헤드 길이 (mm)</label>
+      <label>받침 ㅗ 헤드 길이 (mm)</label>
       <input type="number" id="postHeadLen" value="180">
     </div>
 
-    <hr class="hr" />
-    <div class="sectionTitle">표현(색상)</div>
-
-    <div class="input-group">
-      <label>전체 색상</label>
-      <input type="color" id="allColor" value="#666666" />
-    </div>
-
     <div class="info-box">
-      * Home/Brand는 Cafe24로 이동하도록 고정 가능 (HOME_URL).<br>
       * 프레임(ㅁ자)은 각관 내부에 반복 배치됩니다.<br>
       * 추후: 프레임 두께/방향, 레일 컷(겹침) 로직, 앙카/홀 등 세부 고도화 가능.
     </div>
   </aside>
+
 
 
   <main id="canvas-container" style="padding-top:56px;">
@@ -284,10 +278,10 @@
     const VIEW = { showPosts: true, showRails: true };
 
     // ==============================
-    // 포스트 설계(코드에서만 수정)
+    // 받침 설계(코드에서만 수정)
     // ==============================
     const POST_CFG = {
-      // 포스트(ㅗ) 기본 치수(일단 간단하게)
+      // 받침(ㅗ) 기본 치수(일단 간단하게)
       stemWScaleToTube: 0.35,     // stem 가로폭 = tubeW * scale
       stemDScaleToTube: 0.35,     // stem 깊이   = tubeH * scale
       headTLinkedToBarT: true,    // head 두께를 barT에 연동
@@ -297,11 +291,13 @@
 
       // 앙카(시각용)
       showAnchors: true,
-      anchorRad: 6,
-      anchorHeight: 10,
-      holeOffset: 35,
-      holeCount: 4,
-      holeSegs: 24,
+      anchorRad: 8,
+      anchorHeight: 8,
+      holeOffsetX: 50, // 좌우(가로) 간격의 반값 (mm)
+      holeOffsetZ: 25, // 앞뒤(세로) 간격의 반값 (mm)
+
+      holeCount: 2,
+      holeSegs: 6,
 
       postZ: 0,
     };
@@ -390,6 +386,13 @@
       renderRailing();
     }
 
+    let _renderT = null;
+    function requestRender() {
+      clearTimeout(_renderT);
+      _renderT = setTimeout(() => renderRailing(), 30); // 30~80ms 추천
+    }
+
+
     function wireUI() {
       const btnPosts = document.getElementById('btnPosts');
       const btnRails = document.getElementById('btnRails');
@@ -400,34 +403,54 @@
       const brandLink = document.getElementById('brandLink');
       if (brandLink) brandLink.href = HOME_URL;
 
+      // 토글 버튼 UI 동기화
       const syncBtn = (btn, onText, offText, isOn) => {
+        if (!btn) return;
         btn.classList.toggle('on', isOn);
         btn.textContent = isOn ? onText : offText;
       };
 
       const syncAll = () => {
-        syncBtn(btnPosts, '포스트 ON', '포스트 OFF', VIEW.showPosts);
+        syncBtn(btnPosts, '받침 ON', '받침 OFF', VIEW.showPosts);
         syncBtn(btnRails, '난간 ON', '난간 OFF', VIEW.showRails);
       };
       syncAll();
 
-      btnPosts.addEventListener('click', () => { VIEW.showPosts = !VIEW.showPosts; syncAll(); renderRailing(); });
-      btnRails.addEventListener('click', () => { VIEW.showRails = !VIEW.showRails; syncAll(); renderRailing(); });
+      if (btnPosts) btnPosts.addEventListener('click', () => {
+        VIEW.showPosts = !VIEW.showPosts;
+        syncAll();
+        requestRender();
+      });
 
-      // ✅ 전체 색상 컬러피커
-      const allColor = document.getElementById("allColor");
-      if (allColor) {
-        allColor.addEventListener("input", () => {
-          THEME.all = hexToInt(allColor.value);
+      if (btnRails) btnRails.addEventListener('click', () => {
+        VIEW.showRails = !VIEW.showRails;
+        syncAll();
+        requestRender();
+      });
 
-          // 이미 만들어진 모델에 바로 적용
-          if (railingGroup) applyColorToGroup(railingGroup, THEME.all);
+      // ✅ number input은 input 이벤트 (디바운스 렌더)
+      document.querySelectorAll('input[type="number"]').forEach(el => {
+        el.addEventListener('input', requestRender);
+      });
+
+      // ✅ color는 change로 "값 확정"될 때만 반영 (맥 안정)
+      const allColorEl = document.getElementById('allColor');
+      if (allColorEl) {
+        // 초기값도 THEME에 반영
+        THEME.all = hexToInt(allColorEl.value || "#666666");
+
+        allColorEl.addEventListener('change', (e) => {
+          THEME.all = hexToInt(e.target.value || "#666666");
+
+          // 렌더를 돌리지 않고도 즉시 색만 변경 가능(가장 안정)
+          applyColorToGroup(railingGroup, THEME.all);
+
+          // 만약 "새로 생성되는 메쉬에도 색 적용"까지 확실히 하고 싶으면 아래도 추가
+          // requestRender();
         });
       }
-
-
-      document.querySelectorAll('input').forEach(el => el.addEventListener('input', renderRailing));
     }
+
 
     function loadHuman() {
       const loader = new THREE.GLTFLoader();
@@ -546,7 +569,7 @@
     }
 
     /**
- * ✅ ㅁ자 모듈을 "섹션(포스트 사이)" 안에 반복 배치하는 함수
+ * ✅ ㅁ자 모듈을 "섹션(받침 사이)" 안에 반복 배치하는 함수
  *
  * 목표:
  * - 섹션 내부 유효 길이(rail과 안 겹치게 cut 반영) 안에서
@@ -559,9 +582,9 @@
  * - N이 짝수 -> 모듈과 모듈 사이 "간격 중심"이 섹션 중앙
  */
     function addRectFrameModulesCentered({
-      sectionX0,     // 섹션 시작 X (포스트~포스트 기준)
-      sectionLen,    // 섹션 길이 (포스트 간격 actualInterval)
-      cut,           // 포스트 헤드 겹침 방지용 컷(좌우)
+      sectionX0,     // 섹션 시작 X (받침~받침 기준)
+      sectionLen,    // 섹션 길이 (받침 간격 actualInterval)
+      cut,           // 받침 헤드 겹침 방지용 컷(좌우)
       yTop,          // 프레임 상단 가로부재 중심 Y
       yBot,          // 프레임 하단 가로부재 중심 Y
       z,
@@ -571,7 +594,7 @@
       barT,
       color
     }) {
-      // ====== 1) 섹션 내부 유효 구간 (포스트 헤드/베이스랑 겹치지 않도록 컷 적용) ======
+      // ====== 1) 섹션 내부 유효 구간 (받침 헤드/베이스랑 겹치지 않도록 컷 적용) ======
       const innerX0 = sectionX0 + cut;
       const innerLen = Math.max(0, sectionLen - 2 * cut);
 
@@ -685,7 +708,7 @@
     function addSlatsInSection({
       x0, sectionLen, yTop, yBot, z,
       tubeW, tubeT, barW, barT,
-      cut = 0,           // ✅ 섹션 양 끝에서 피해야 하는 거리(포스트 stem 회피용)
+      cut = 0,           // ✅ 섹션 양 끝에서 피해야 하는 거리(받침 stem 회피용)
     }) {
 
       // =========================================================
@@ -710,15 +733,15 @@
         const topY = yTop - (useBarT / 2);
         const botY = yBot + (useBarT / 2);
 
-        // ✅ 포스트가 있으면 rails에서 썼던 cut 값을 여기에도 동일 적용해야 “겹침”이 안 남
+        // ✅ 받침 있으면 rails에서 썼던 cut 값을 여기에도 동일 적용해야 “겹침”이 안 남
         // 섹션별 cut은 renderRailing에서 계산했던 값과 동일하게 맞추는 게 정답.
-        // 현재 addSlatsInSection에 cut이 전달되지 않으니, 여기서 간단히 "포스트 헤드 기준"으로 계산:
+        // 현재 addSlatsInSection에 cut이 전달되지 않으니, 여기서 간단히 "받침 헤드 기준"으로 계산:
         // (정교하게 하려면 renderRailing에서 cut을 계산해 같이 넘겨주는 구조가 가장 깔끔함)
 
         addRectFrameModulesCentered({
           sectionX0: x0,
           sectionLen,
-          cut,                // ✅ 포스트 헤드 겹침 방지
+          cut,                // ✅ 받침 헤드 겹침 방지
           yTop: topY,
           yBot: botY,
           z,
@@ -794,7 +817,7 @@
     }
 
 
-    // ✅ 포스트(ㅗ): 바닥판 + 수직 stem + 상부 head + (옵션) 앙카
+    // ✅ 받침(ㅗ): 바닥판 + 수직 stem + 상부 head + (옵션) 앙카
     function addPostT(posX, ground, tubeW, tubeH, barT, postHeadLen, postZ) {
       const baseT = POST_CFG.baseTLinkedToBarT ? Math.max(2, barT * POST_CFG.baseTScale) : 10;
       const headT = POST_CFG.headTLinkedToBarT ? Math.max(2, barT * POST_CFG.headTScale) : 6;
@@ -820,10 +843,13 @@
 
       // 앙카(수직, 시각용)
       if (POST_CFG.showAnchors) {
-        const off = POST_CFG.holeOffset;
+        const offX = POST_CFG.holeOffsetX ?? 35; // 가로 반간격
+        const offZ = POST_CFG.holeOffsetZ ?? offX; // 세로 반간격(기본=offX)
+
         const holes = (POST_CFG.holeCount === 2)
-          ? [[-off, 0], [off, 0]]
-          : [[-off, -off], [off, -off], [-off, off], [off, off]];
+          ? [[-offX, 0], [offX, 0]]                          // 좌/우 2개
+          : [[-offX, -offZ], [offX, -offZ], [-offX, offZ], [offX, offZ]]; // 4개
+
 
         const anchorR = POST_CFG.anchorRad ?? 6;
         const anchorH = POST_CFG.anchorHeight ?? 120;
@@ -849,7 +875,6 @@
       const tubeH = Math.max(20, +document.getElementById('tubeH').value || 50);
       const tubeT = Math.max(1, +document.getElementById('tubeT').value || 2.3);
 
-      const frameGap = Math.max(40, +document.getElementById('frameGap').value || 120);
       const barW = Math.max(5, +document.getElementById('barW').value || 25);
       const barT = Math.max(2, +document.getElementById('barT').value || 6);
 
@@ -865,10 +890,10 @@
       const numSections = Math.max(1, Math.round(L / postInt));
       const actualInterval = L / numSections;
 
-      // 포스트 위치마다 메타 저장(레일 절단용)
+      // 받침 위치마다 메타 저장(레일 절단용)
       const postMeta = new Array(numSections + 1).fill(null).map(() => ({ headLen: 0 }));
 
-      // 1) 포스트 생성
+      // 1) 받침 생성
       if (VIEW.showPosts) {
         for (let i = 0; i <= numSections; i++) {
           const x = i * actualInterval;
@@ -884,7 +909,7 @@
           const center = x0 + actualInterval / 2;
 
 
-          // ✅ 레일은 포스트 "중심까지" 와야 하므로 섹션 전체 길이 그대로 사용
+          // ✅ 레일은 받침 "중심까지" 와야 하므로 섹션 전체 길이 그대로 사용
           const railLen = actualInterval;
 
 
@@ -897,7 +922,7 @@
           botTube.position.set(center, yBotTube, POST_CFG.postZ);
           railingGroup.add(botTube);
 
-          // ✅ ㅁ자 모듈(살)이 포스트 헤드가 아니라 "기둥(stem)"만 피하면 되므로,
+          // ✅ ㅁ자 모듈(살)이 받침 헤드가 아니라 "기둥(stem)"만 피하면 되므로,
           // cut은 stem 반폭 + 약간의 여유만 주면 됨.
           let slatCut = 0;
           if (VIEW.showPosts) {
@@ -914,8 +939,10 @@
             yTop: yTopTube - tubeH / 2,
             yBot: yBotTube + tubeH / 2,
             z: POST_CFG.postZ,
-            tubeW, tubeT, barW, barT
+            tubeW, tubeT, barW, barT,
+            cut: slatCut, // ✅ 이거 추가
           });
+
 
         }
       }
