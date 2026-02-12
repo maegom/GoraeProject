@@ -10,21 +10,47 @@
   <style>
     .tag-new {
       color: #e03131;
-      /* 빨강 */
       font-weight: 900;
     }
-  </style>
 
+    /* ✅ 카드 썸네일 추가 */
+    .cardThumb {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #f1f3f5;
+      margin-bottom: 12px;
+      border: 1px solid #e9ecef;
+    }
+
+    .cardThumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* ✅ 비활성화 카드 */
+    .card.is-disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      pointer-events: none;
+      filter: grayscale(0.2);
+    }
+
+    .card.is-disabled .cardBtn {
+      opacity: 0.8;
+    }
+  </style>
 </head>
 
 <body>
   <header class="topbar">
-    <!-- ✅ 브랜드 텍스트는 여기만 바꾸면 됨 -->
     <a class="brand" href="#" id="brandLink">고래이음</a>
 
     <nav class="nav">
       <a href="#" id="homeLink">Home</a>
-      <!--  <a class="active" href="./">Railings</a> -->
     </nav>
   </header>
 
@@ -33,21 +59,63 @@
     <p class="sub">원하는 난간 시뮬레이터를 선택하세요.</p>
 
     <section class="grid">
+      <!-- 1) flatbar-pipe -->
       <a class="card" href="./flatbar-pipe/">
+        <div class="cardThumb">
+          <img src="../shared/img/railings/flatbar-pipe.webp" alt="평철-원형 모듈 난간 썸네일"
+            onerror="this.onerror=null; this.src='../shared/img/railings/placeholder.webp';">
+        </div>
         <div class="cardTitle">평철-원형 모듈 난간</div>
         <div class="cardDesc">평철 가로재와 원형 파이프 살대를 볼트로 결합한 조립식 모듈 난간.</div>
         <div class="cardBtn">열기 →</div>
       </a>
 
+      <!-- 2) squaretube-flatbar -->
       <a class="card" href="./squaretube-flatbar/">
+        <div class="cardThumb">
+          <img src="../shared/img/railings/squaretube-flatbar.webp" alt="각관-평철 모듈 난간 썸네일"
+            onerror="this.onerror=null; this.src='../shared/img/railings/placeholder.webp';">
+        </div>
         <div class="cardTitle">각관-평철 모듈 난간 <span class="tag-new">(NEW)</span></div>
         <div class="cardDesc">각파이프 프레임 사이에 평철 살대 유닛을 리벳으로 체결한 모듈 난간.</div>
         <div class="cardBtn">열기 →</div>
+      </a>
+
+      <!-- 3) post-double-rail-rectframe (비활성) -->
+      <a class="card is-disabled" href="./post-double-rail-rectframe/" aria-disabled="true">
+        <div class="cardThumb">
+          <img src="../shared/img/railings/post-double-rail-rectframe.webp" alt="각관-평철 이중모듈 난간 썸네일"
+            onerror="this.onerror=null; this.src='../shared/img/railings/placeholder.webp';">
         </div>
+        <div class="cardTitle">각관-평철 이중모듈 난간</div>
+        <div class="cardDesc">각관 포스트로 구간을 분절하고, 위·아래 각관 레일 + 상부 보조 레일로 연결한 ㅁ자 평철 모듈 난간.</div>
+        <div class="cardBtn">준비중</div>
+      </a>
+
+      <!-- 4) post-bound-frame-unit (비활성) -->
+      <a class="card is-disabled" href="./post-bound-frame-unit/" aria-disabled="true">
+        <div class="cardThumb">
+          <img src="../shared/img/railings/post-bound-frame-unit.webp" alt="각관-평철 포스트 결합형 모듈 난간 썸네일"
+            onerror="this.onerror=null; this.src='../shared/img/railings/placeholder.webp';">
+        </div>
+        <div class="cardTitle">각관-평철 포스트 결합형 모듈 난간</div>
+        <div class="cardDesc">일정 간격의 각관 포스트 사이에 프레임 모듈 1세트를 끼우고, 모듈 양끝 평철을 포스트에 리벳 결합하는 난간.</div>
+        <div class="cardBtn">준비중</div>
+      </a>
+
+      <!-- 5) rail-insert-rectframe (비활성) -->
+      <a class="card is-disabled" href="./rail-insert-rectframe/" aria-disabled="true">
+        <div class="cardThumb">
+          <img src="../shared/img/railings/rail-insert-rectframe.webp" alt="각관-평철 레일 삽입형 모듈 난간 썸네일"
+            onerror="this.onerror=null; this.src='../shared/img/railings/placeholder.webp';">
+        </div>
+        <div class="cardTitle">각관-평철 레일 삽입형 모듈 난간</div>
+        <div class="cardDesc">포스트 사이를 위·아래 각관 레일로 연결하고, ㅁ자 모듈을 레일에 삽입 후 리벳으로 고정하는 난간.</div>
+        <div class="cardBtn">준비중</div>
+      </a>
     </section>
   </main>
 
-  <!-- ✅ DOM 다 만든 다음 실행되게 "body 맨 아래"에 둬야 함 -->
   <script>
     const HOME_URL = "https://goraeeum.cafe24.com/";
 
