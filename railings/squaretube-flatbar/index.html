@@ -237,7 +237,7 @@
 
     <details class="acc" open>
       <summary>
-        <span>1. 공정 시뮬</span>
+        <span>1. 보기 및 공정 시뮬</span>
         <span class="chev">›</span>
       </summary>
 
@@ -246,9 +246,16 @@
         <!-- ✅ (1) 전체 색상: 맨 위 -->
         <div class="input-group" style="margin-top:0;">
           <label>색상 변경</label>
-          <input type="color" id="allColor" value="#666666" />
-        </div>
 
+          <!-- 컬러 + 사람토글 한 줄 -->
+          <div style="display:flex; gap:10px; align-items:center;">
+            <input type="color" id="allColor" value="#666666" style="flex:1; height:42px;" />
+
+            <button id="btnHuman" class="btn-mini on" type="button" style="flex:0; min-width:110px;">
+              사람 ON
+            </button>
+          </div>
+        </div>
         <!-- ✅ (2) 단계: 그 밑 -->
         <div class="step-box" style="margin-top:10px;">
           <span>단계</span>
@@ -387,6 +394,7 @@
       showBotRail: true,
       showSlats: true,
       showTopRail: true,
+      showHuman: true,
     };
 
     // ✅ 공정 단계(0~4)
@@ -515,6 +523,18 @@
       syncBtn(document.getElementById('btnTopRail'), '위레일 ON', '위레일 OFF', VIEW.showTopRail);
     }
 
+    function syncHumanButton() {
+      syncBtn(document.getElementById('btnHuman'), '사람 ON', '사람 OFF', VIEW.showHuman);
+    }
+
+    function applyHumanVisibility() {
+      if (!humanModel) return; // 아직 로드 전이면 무시
+      const inScene = humanModel.parent === scene;
+
+      if (VIEW.showHuman && !inScene) scene.add(humanModel);
+      if (!VIEW.showHuman && inScene) scene.remove(humanModel);
+    }
+
     function wireUI() {
       // Home/Brand 링크
       const homeLink = document.getElementById('homeLink');
@@ -542,11 +562,21 @@
       syncStepLabel();
       syncViewButtons();
 
+      syncHumanButton();
+      applyHumanVisibility();
+
       // 토글 버튼들(수동 토글 시 step은 0으로 내려서 "공정 모드 해제")
       const btnPosts = document.getElementById('btnPosts');
       const btnBot = document.getElementById('btnBotRail');
       const btnSlats = document.getElementById('btnSlats');
       const btnTop = document.getElementById('btnTopRail');
+
+      const btnHuman = document.getElementById('btnHuman');
+      if (btnHuman) btnHuman.addEventListener('click', () => {
+        VIEW.showHuman = !VIEW.showHuman;
+        syncHumanButton();
+        applyHumanVisibility();
+      });
 
       if (btnPosts) btnPosts.addEventListener('click', () => {
         VIEW.showPosts = !VIEW.showPosts;
@@ -623,6 +653,12 @@
         humanModel.position.set(300, 0, -500);
         humanModel.rotation.y = Math.PI / 4;
         scene.add(humanModel);
+
+        // ✅ 현재 토글 상태 반영
+        applyHumanVisibility();
+        syncHumanButton();
+
+
         loadingScreen.style.visibility = 'hidden';
         loadingScreen.innerText = '모델 데이터를 불러오는 중...';
       }, (xhr) => {
