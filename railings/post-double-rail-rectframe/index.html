@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>각관-평철 이중모듈 난간 | 고래이음 난간 시뮬레이터</title>
+
+    <link rel="stylesheet" href="../../shared/css/app.css" />
+
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            font-family: 'Pretendard', sans-serif;
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        #sidebar {
+            width: 320px;
+            padding: 18px 18px 22px;
+            background: #fff;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: 2px 0 15px rgba(0, 0, 0, .05);
+            z-index: 100;
+        }
+
+        #canvas-container {
+            flex-grow: 1;
+            position: relative;
+            background: #eee;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        input[type="number"]:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+
+        .pageTitle {
+            font-size: 16px;
+            font-weight: 900;
+            margin: 8px 0 4px;
+        }
+
+        .pageSub {
+            font-size: 12px;
+            color: #777;
+            margin: 0 0 14px;
+            line-height: 1.5;
+        }
+
+        .row2 {
+            display: flex;
+            gap: 8px;
+        }
+
+        .row2 input {
+            width: 50%;
+        }
+
+        .info-box {
+            font-size: 11px;
+            color: #888;
+            line-height: 1.6;
+            background: #f1f3f5;
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 14px;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, .82);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            visibility: hidden;
+            font-weight: 900;
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 900;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #f1f3f5;
+            color: #495057;
+            margin-top: 8px;
+        }
+
+        /* ===== Sidebar Sections (Accordion) ===== */
+        .acc {
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            background: #fff;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .acc>summary {
+            list-style: none;
+            cursor: pointer;
+            user-select: none;
+            padding: 12px 12px;
+            font-size: 13px;
+            font-weight: 900;
+            color: #343a40;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eef1f4;
+        }
+
+        .acc>summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .acc>summary .chev {
+            font-weight: 900;
+            color: #868e96;
+            transform: rotate(0deg);
+            transition: transform .15s ease;
+        }
+
+        .acc[open]>summary .chev {
+            transform: rotate(90deg);
+        }
+
+        .acc-body {
+            padding: 12px;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-mini {
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid #e0e0e0;
+            background: #f3f5f7;
+            color: #222;
+            font-weight: 900;
+            cursor: pointer;
+            user-select: none;
+            flex: 1;
+            min-width: 88px;
+        }
+
+        .btn-mini.on {
+            background: #e7f1ff;
+            border-color: #a8ccff;
+            color: #0b57d0;
+        }
+
+        .step-box {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: #f1f3f5;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #495057;
+            font-weight: 900;
+        }
+
+        .step-pill {
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #fff;
+            border: 1px solid #e9ecef;
+            color: #0b57d0;
+            font-weight: 900;
+            font-size: 12px;
+            min-width: 56px;
+            text-align: center;
+        }
+
+        .tiny-help {
+            font-size: 11px;
+            color: #888;
+            line-height: 1.5;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="topbar" style="position:fixed; left:320px; right:0; top:0;">
+        <a class="brand" href="#" id="brandLink">고래이음</a>
+        <nav class="nav">
+            <a href="#" id="homeLink">Home</a>
+            <a class="active" href="../">Back</a>
+        </nav>
+    </header>
+
+    <aside id="sidebar">
+        <div class="badge">Railing / Post + Double Rail + RectFrame</div>
+        <div class="pageTitle">각관-평철 이중모듈 난간</div>
+        <p class="pageSub">
+            포스트(각관) + 3단 가로재(하/중/상) + ㅁ자 모듈.<br>
+            값 변경 시 3D 모델이 실시간 업데이트됩니다.
+        </p>
+
+        <!-- 1) 보기/공정(항상 펼침) -->
+        <details class="acc" open>
+            <summary>
+                <span>1. 보기 및 공정 시뮬</span>
+                <span class="chev">›</span>
+            </summary>
+
+            <div class="acc-body">
+                <!-- 색 + 사람 토글 -->
+                <div class="input-group" style="margin-top:0;">
+                    <label>색상 / 사람</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="color" id="allColor" value="#666666" style="flex:1; height:42px;" />
+                        <button id="btnHuman" class="btn-mini on" type="button" style="flex:0; min-width:110px;">사람
+                            ON</button>
+                    </div>
+                </div>
+
+                <!-- 단계 -->
+                <div class="step-box" style="margin-top:10px;">
+                    <span>단계</span>
+                    <span class="step-pill" id="buildStepLabel">0 / 5</span>
+                </div>
+
+                <div class="btn-row" style="margin-top:10px;">
+                    <button id="btnStepPrev" class="btn-mini" type="button">Prev</button>
+                    <button id="btnStepNext" class="btn-mini" type="button">Next</button>
+                    <button id="btnStepReset" class="btn-mini" type="button">Reset</button>
+                </div>
+
+                <!-- ON/OFF 토글 -->
+                <div class="btn-row" style="margin-top:12px;">
+                    <button id="btnPosts" class="btn-mini on" type="button">포스트 ON</button>
+                    <button id="btnRailBot" class="btn-mini on" type="button">하부레일 ON</button>
+                    <button id="btnSlats" class="btn-mini on" type="button">ㅁ자모듈 ON</button>
+                    <button id="btnRailMid" class="btn-mini on" type="button">중간레일 ON</button>
+                    <button id="btnRailTop" class="btn-mini on" type="button">상부레일 ON</button>
+                </div>
+
+                <div class="tiny-help">
+                    * 단계(0~5): 0=없음 → 1=포스트 → 2=하부레일 → 3=ㅁ자모듈 → 4=중간레일 → 5=상부레일<br>
+                    * 토글을 수동으로 누르면 단계는 0으로 초기화됩니다.
+                </div>
+            </div>
+        </details>
+
+        <!-- 2) 전체 설정 -->
+        <details class="acc">
+            <summary>
+                <span>2. 전체 설정</span>
+                <span class="chev">›</span>
+            </summary>
+            <div class="acc-body">
+                <div class="input-group">
+                    <label>전체 길이 (mm)</label>
+                    <input type="number" id="totalL" value="3000">
+                </div>
+                <div class="input-group">
+                    <label>난간 높이 (mm) <span style="font-weight:400;">(상부레일 최상단 기준)</span></label>
+                    <input type="number" id="height" value="1200">
+                </div>
+            </div>
+        </details>
+
+        <!-- 3) 포스트 설정 -->
+        <details class="acc">
+            <summary>
+                <span>3. 포스트 설정</span>
+                <span class="chev">›</span>
+            </summary>
+            <div class="acc-body">
+                <div class="input-group">
+                    <label>포스트 간격 (mm)</label>
+                    <input type="number" id="postInt" value="1000">
+                </div>
+                <div class="input-group">
+                    <label>포스트 각관 W/H (mm)</label>
+                    <div class="row2">
+                        <input type="number" id="postW" value="50" title="포스트 폭 W">
+                        <input type="number" id="postH" value="50" title="포스트 높이 H">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>베이스플레이트 W/D (mm)</label>
+                    <div class="row2">
+                        <input type="number" id="basePlateW" value="200" title="베이스플레이트 가로폭 W">
+                        <input type="number" id="basePlateD" value="120" title="베이스플레이트 세로폭 D">
+                    </div>
+                </div>
+
+
+            </div>
+            <div class="input-group">
+                <label>베이스 플레이트 두께 (mm)</label>
+                <input type="number" id="basePlateT" value="10">
+            </div>
+            </div>
+        </details>
+
+        <!-- 4) 난간 가로재(각관) -->
+        <details class="acc">
+            <summary>
+                <span>4. 난간 가로재(각관)</span>
+                <span class="chev">›</span>
+            </summary>
+            <div class="acc-body">
+                <div class="input-group">
+                    <label>가로재 각관 W/H (mm)</label>
+                    <div class="row2">
+                        <input type="number" id="railW" value="50" title="레일 폭 W (Z)">
+                        <input type="number" id="railH" value="30" title="레일 높이 H (Y)">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>시작 높이 (mm) <span style="font-weight:400;">(하부레일 하단 기준)</span></label>
+                    <input type="number" id="railStartY" value="80">
+                </div>
+            </div>
+        </details>
+
+        <!-- 5) 살 모듈(ㅁ자) -->
+        <details class="acc">
+            <summary>
+                <span>5. 살 모듈 (ㅁ자)</span>
+                <span class="chev">›</span>
+            </summary>
+            <div class="acc-body">
+                <div class="input-group">
+                    <label>평철 폭 / 두께 (mm)</label>
+                    <div class="row2">
+                        <input type="number" id="barW" value="45" title="평철 폭">
+                        <input type="number" id="barT" value="6" title="평철 두께">
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>ㅁ자 모듈 가로폭 (mm) <span style="font-weight:400;">(세로부재 중심-중심)</span></label>
+                    <input type="number" id="moduleW" value="100">
+                </div>
+
+                <div class="input-group">
+                    <label>ㅁ자 모듈 높이 (mm) <span style="font-weight:400;">(가로부재 중심-중심)</span></label>
+                    <input type="number" id="moduleH" value="900">
+                </div>
+
+                <div class="input-group">
+                    <label>ㅁ자 모듈 간격 (mm) <span style="font-weight:400;">(모듈-모듈 사이)</span></label>
+                    <input type="number" id="moduleGap" value="100">
+                </div>
+            </div>
+        </details>
+
+        <div class="info-box">
+            * 상부레일 최상단이 "난간 높이"에 맞춰집니다.<br>
+            * 포스트 높이는 자동 계산됩니다(난간 높이 - 상부레일 높이).<br>
+            * 모듈 개수는 포스트 사이 유효 길이에 맞춰 자동 센터링됩니다.
+        </div>
+    </aside>
+
+    <main id="canvas-container" style="padding-top:56px;">
+        <div id="loading" class="loading-overlay">모델 데이터를 불러오는 중...</div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+    <script>
+        let scene, camera, renderer, controls, railingGroup, humanModel;
+
+        const HOME_URL = "https://goraeeum.cafe24.com/";
+
+        // ✅ 보기 토글(부재별)
+        const VIEW = {
+            showPosts: true,
+            showRailBot: true,
+            showSlats: true,
+            showRailMid: true,
+            showRailTop: true,
+            showHuman: true,
+        };
+
+        // ✅ 공정 단계(0~5)
+        const BUILD = { step: 5 };
+
+        // ✅ 전체 컬러
+        const THEME = { all: 0x666666 };
+
+        // ====== utils ======
+        function hexToInt(hex) { return parseInt((hex || "#666666").replace("#", ""), 16); }
+
+        function createMesh(geom, color) {
+            const mat = new THREE.MeshStandardMaterial({ color, metalness: 0.6, roughness: 0.3 });
+            return new THREE.Mesh(geom, mat);
+        }
+
+        function addPostWithBase({
+            x,
+            baseW, baseD, baseT,
+            postW, postD, postH,
+            z = 0,
+            colorBase = 0x333333,
+            colorPost = 0x444444
+        }) {
+            // 베이스 플레이트
+            const base = createMesh(new THREE.BoxGeometry(baseW, baseT, baseD), colorBase);
+            base.position.set(x, baseT / 2, z);
+            railingGroup.add(base);
+
+            // 포스트(각관을 Box로 단순 표현)
+            const post = createMesh(new THREE.BoxGeometry(postW, postH, postD), colorPost);
+            post.position.set(x, baseT + postH / 2, z);
+            railingGroup.add(post);
+
+            return { baseT, postH };
+        }
+
+
+        function applyColorToGroup(group, colorInt) {
+            group.traverse((obj) => {
+                if (!obj.isMesh) return;
+                const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+                mats.forEach((m) => { if (m && m.color) m.color.setHex(colorInt); m.needsUpdate = true; });
+            });
+        }
+
+        let _renderT = null;
+        function requestRender() {
+            clearTimeout(_renderT);
+            _renderT = setTimeout(() => renderRailing(), 30);
+        }
+
+        // ====== UI sync helpers ======
+        function syncBtn(btn, onText, offText, isOn) {
+            if (!btn) return;
+            btn.classList.toggle('on', isOn);
+            btn.textContent = isOn ? onText : offText;
+        }
+
+        function syncStepLabel() {
+            const el = document.getElementById('buildStepLabel');
+            if (!el) return;
+            el.textContent = `${BUILD.step} / 5`;
+        }
+
+        function applyStepToView() {
+            const s = BUILD.step;
+            VIEW.showPosts = s >= 1;
+            VIEW.showRailBot = s >= 2;
+            VIEW.showSlats = s >= 3;
+            VIEW.showRailMid = s >= 4;
+            VIEW.showRailTop = s >= 5;
+        }
+
+        function syncViewButtons() {
+            syncBtn(document.getElementById('btnPosts'), '포스트 ON', '포스트 OFF', VIEW.showPosts);
+            syncBtn(document.getElementById('btnRailBot'), '하부레일 ON', '하부레일 OFF', VIEW.showRailBot);
+            syncBtn(document.getElementById('btnSlats'), 'ㅁ자모듈 ON', 'ㅁ자모듈 OFF', VIEW.showSlats);
+            syncBtn(document.getElementById('btnRailMid'), '중간레일 ON', '중간레일 OFF', VIEW.showRailMid);
+            syncBtn(document.getElementById('btnRailTop'), '상부레일 ON', '상부레일 OFF', VIEW.showRailTop);
+        }
+
+        function syncHumanButton() {
+            syncBtn(document.getElementById('btnHuman'), '사람 ON', '사람 OFF', VIEW.showHuman);
+        }
+
+        function applyHumanVisibility() {
+            if (!humanModel) return;
+            const inScene = humanModel.parent === scene;
+            if (VIEW.showHuman && !inScene) scene.add(humanModel);
+            if (!VIEW.showHuman && inScene) scene.remove(humanModel);
+        }
+
+        // ====== init ======
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf1f3f5);
+
+            camera = new THREE.PerspectiveCamera(45, (window.innerWidth - 320) / window.innerHeight, 10, 50000);
+            camera.position.set(2500, 1500, 3000);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth - 320, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+
+            scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.2));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(2000, 4000, 2000);
+            scene.add(dirLight);
+
+            scene.add(new THREE.GridHelper(10000, 50, 0xd1d1d1, 0xe1e1e1));
+
+            railingGroup = new THREE.Group();
+            scene.add(railingGroup);
+
+            wireUI();
+            loadHuman();
+            renderRailing();
+        }
+
+        function wireUI() {
+            // Home/Brand 링크
+            const homeLink = document.getElementById('homeLink');
+            if (homeLink) homeLink.href = HOME_URL;
+            const brandLink = document.getElementById('brandLink');
+            if (brandLink) brandLink.href = HOME_URL;
+
+            // inputs -> 디바운스 렌더
+            document.querySelectorAll('input[type="number"]').forEach(el => el.addEventListener('input', requestRender));
+
+            // color
+            const allColorEl = document.getElementById('allColor');
+            if (allColorEl) {
+                THEME.all = hexToInt(allColorEl.value);
+                allColorEl.addEventListener('change', (e) => {
+                    THEME.all = hexToInt(e.target.value);
+                    applyColorToGroup(railingGroup, THEME.all);
+                });
+            }
+
+            // 초기 단계
+            applyStepToView();
+            syncStepLabel();
+            syncViewButtons();
+            syncHumanButton();
+            applyHumanVisibility();
+
+            // 토글(수동 토글 시 step=0)
+            const bindToggle = (id, key, onText, offText) => {
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                btn.addEventListener('click', () => {
+                    VIEW[key] = !VIEW[key];
+                    BUILD.step = 0;
+                    syncStepLabel();
+                    syncViewButtons();
+                    requestRender();
+                });
+            };
+
+            bindToggle('btnPosts', 'showPosts');
+            bindToggle('btnRailBot', 'showRailBot');
+            bindToggle('btnSlats', 'showSlats');
+            bindToggle('btnRailMid', 'showRailMid');
+            bindToggle('btnRailTop', 'showRailTop');
+
+            // 사람 토글
+            const btnHuman = document.getElementById('btnHuman');
+            if (btnHuman) btnHuman.addEventListener('click', () => {
+                VIEW.showHuman = !VIEW.showHuman;
+                syncHumanButton();
+                applyHumanVisibility();
+            });
+
+            // 공정 버튼: 순환(5->0, 0->5)
+            const btnPrev = document.getElementById('btnStepPrev');
+            const btnNext = document.getElementById('btnStepNext');
+            const btnReset = document.getElementById('btnStepReset');
+
+            if (btnPrev) btnPrev.addEventListener('click', () => {
+                BUILD.step = (BUILD.step <= 0) ? 5 : (BUILD.step - 1);
+                applyStepToView();
+                syncStepLabel();
+                syncViewButtons();
+                requestRender();
+            });
+
+            if (btnNext) btnNext.addEventListener('click', () => {
+                BUILD.step = (BUILD.step >= 5) ? 0 : (BUILD.step + 1);
+                applyStepToView();
+                syncStepLabel();
+                syncViewButtons();
+                requestRender();
+            });
+
+            if (btnReset) btnReset.addEventListener('click', () => {
+                BUILD.step = 0;
+                applyStepToView();
+                syncStepLabel();
+                syncViewButtons();
+                requestRender();
+            });
+        }
+
+        function loadHuman() {
+            const loader = new THREE.GLTFLoader();
+            const loadingScreen = document.getElementById('loading');
+            loadingScreen.style.visibility = 'visible';
+
+            const rawUrl = '../../shared/model/SampleHuman.glb';
+
+            loader.load(rawUrl, (gltf) => {
+                humanModel = gltf.scene;
+                humanModel.scale.set(25, 25, 25);
+                humanModel.position.set(300, 0, -500);
+                humanModel.rotation.y = Math.PI / 4;
+
+                scene.add(humanModel);
+
+                applyHumanVisibility();
+                syncHumanButton();
+
+                loadingScreen.style.visibility = 'hidden';
+                loadingScreen.innerText = '모델 데이터를 불러오는 중...';
+            }, (xhr) => {
+                if (!xhr.total) return;
+                const percent = Math.round((xhr.loaded / xhr.total) * 100);
+                loadingScreen.innerText = `모델 로딩 중... (${percent}%)`;
+            }, (error) => {
+                console.error('모델 로드 실패:', error);
+                loadingScreen.innerText = '사람 모델 로드 실패';
+            });
+        }
+
+        // ====== geometry helpers ======
+        function makeRectTube(len, w, h, color) {
+            const g = new THREE.BoxGeometry(len, h, w); // X len, Y height, Z width
+            return createMesh(g, color);
+        }
+
+        function makePostBox(height, w, d, color) {
+            const g = new THREE.BoxGeometry(w, height, d);
+            return createMesh(g, color);
+        }
+
+        // ㅁ자 1개
+        function addRectFrame(centerX, yMid, innerW, innerH, barW, barT, z, color) {
+            const hLen = Math.max(10, innerW);
+            const vLen = Math.max(10, innerH);
+
+            const vLenFixed = vLen + barT;
+            const hLenFixed = Math.max(10, hLen - barT);
+
+            const vGeom = new THREE.BoxGeometry(barT, vLenFixed, barW);
+
+            const left = createMesh(vGeom, color);
+            left.position.set(centerX - (hLen / 2), yMid, z);
+            railingGroup.add(left);
+
+            const right = createMesh(vGeom, color);
+            right.position.set(centerX + (hLen / 2), yMid, z);
+            railingGroup.add(right);
+
+            const hGeom = new THREE.BoxGeometry(hLenFixed, barT, barW);
+
+            const top = createMesh(hGeom, color);
+            top.position.set(centerX, yMid + (vLen / 2), z);
+            railingGroup.add(top);
+
+            const bot = createMesh(hGeom, color);
+            bot.position.set(centerX, yMid - (vLen / 2), z);
+            railingGroup.add(bot);
+        }
+
+        // 포스트 사이 모듈 N개 자동 센터링
+        function addRectFrameModulesCentered({
+            innerX0, innerLen,
+            cut = 0,
+            yTop, yBot, z,
+            moduleW, moduleH, moduleGap,
+            barW, barT,
+            color
+        }) {
+            const x0 = innerX0 + cut;
+            const len = Math.max(0, innerLen - 2 * cut);
+            if (len < moduleW) return;
+
+            const pitch = moduleW + moduleGap;
+            const N = Math.floor((len + moduleGap) / pitch);
+            if (N <= 0) return;
+
+            const totalUsed = (N * moduleW) + ((N - 1) * moduleGap);
+
+            const centerX = x0 + len / 2;
+            const firstCenterX = (centerX - totalUsed / 2) + (moduleW / 2);
+
+            const yMid = (yTop + yBot) / 2;
+
+            for (let i = 0; i < N; i++) {
+                const cx = firstCenterX + i * pitch;
+                addRectFrame(cx, yMid, moduleW, moduleH, barW, barT, z, color);
+            }
+        }
+
+        // ====== main render ======
+        function renderRailing() {
+            while (railingGroup.children.length > 0) railingGroup.remove(railingGroup.children[0]);
+
+            const L = Math.max(200, +document.getElementById('totalL').value || 3000);
+            const H_total = Math.max(300, +document.getElementById('height').value || 1200);
+
+            const postInt = Math.max(200, +document.getElementById('postInt').value || 1000);
+            const postW = Math.max(20, +document.getElementById('postW').value || 50);
+            const postH = Math.max(20, +document.getElementById('postH').value || 50);
+
+            const baseW = Math.max(60, +document.getElementById('basePlateW').value || 180);
+            const baseT = Math.max(4, +document.getElementById('basePlateT').value || 10);
+
+            const railW = Math.max(20, +document.getElementById('railW').value || 50);
+            const railH = Math.max(10, +document.getElementById('railH').value || 30);
+            const railStartY = Math.max(0, +document.getElementById('railStartY').value || 80);
+
+            const barW = Math.max(5, +document.getElementById('barW').value || 45);
+            const barT = Math.max(2, +document.getElementById('barT').value || 6);
+
+            const moduleW = Math.max(40, +document.getElementById('moduleW').value || 100);
+            const moduleH = Math.max(40, +document.getElementById('moduleH').value || 120);
+            const moduleGap = Math.max(0, +document.getElementById('moduleGap').value || 80);
+
+
+            const z = 0;
+
+            // ✅ 포스트 위치를 postInt 기준으로 직접 생성 (계단식 변화 제거)
+            const postXs = [];
+            for (let x = 0; x < L - 0.001; x += postInt) postXs.push(x);
+            if (postXs.length === 0) postXs.push(0);
+            if (Math.abs(postXs[postXs.length - 1] - L) > 0.001) postXs.push(L);
+
+            const numSections = postXs.length - 1;
+
+
+
+
+            // =========================
+            // 높이 계산 (접촉/정렬 보정)
+            // =========================
+
+            // (A) 상부레일: 최상단이 난간 높이(H_total)
+            // 레일은 center 기준이므로 center = H_total - railH/2
+            const yTopRailCenter = H_total - (railH / 2);
+            const yTopRailBottom = H_total - railH; // 상부레일 하단(Y)
+
+            // (B) 포스트: 베이스 플레이트 "위"에서 시작.
+            // 포스트 맨 위가 상부레일 하단(yTopRailBottom)과 정확히 맞아야 함.
+            // => baseT + postHeight = yTopRailBottom  => postHeight = yTopRailBottom - baseT
+            const postHeight = Math.max(50, yTopRailBottom - baseT);
+            const yPostCenter = baseT + (postHeight / 2);
+
+            // (C) 하부레일: 하단이 railStartY
+            const yBotRailCenter = railStartY + (railH / 2);
+            const yBotRailTop = railStartY + railH; // 하부레일 상단(Y)
+
+            // (D) ㅁ자 모듈이 레일에 "딱 붙게" 만들기
+            // addRectFrame()는 moduleH(중심-중심) + barT 만큼이 모듈 외곽 높이(= moduleOuterH)
+            const moduleOuterH = moduleH + barT;
+
+            // 모듈 외곽 하단 = 하부레일 상단(yBotRailTop)
+            // 모듈 외곽 상단 = 중간레일 하단(yMidRailBottom)
+            // => yMidRailBottom = yBotRailTop + moduleOuterH  (여유값 X)
+            const yMidRailBottom = yBotRailTop + moduleOuterH;
+
+            // 중간레일 center
+            const yMidRailCenter = yMidRailBottom + (railH / 2);
+
+            // 모듈을 addRectFrameModulesCentered에 넘길 때, yTop/yBot은 내부에서 평균(yMid)만 쓰니까
+            // 평균이 "모듈 외곽의 정중앙"이 되도록 barT/2 보정만 유지
+            const moduleAreaTop = yMidRailBottom - (barT / 2);
+            const moduleAreaBot = yBotRailTop + (barT / 2);
+
+
+            const basePlateW = Math.max(60, +document.getElementById('basePlateW').value || 220);
+            const basePlateD = Math.max(40, +document.getElementById('basePlateD').value || 120);
+
+
+
+            // 1) 포스트 + 베이스
+            if (VIEW.showPosts) {
+                for (let i = 0; i < postXs.length; i++) {
+                    const x = postXs[i];
+
+
+                    // 베이스 플레이트
+                    // 베이스 플레이트 (W/D 분리 입력)
+                    const plate = createMesh(new THREE.BoxGeometry(basePlateW, baseT, basePlateD), 0x333333);
+                    plate.position.set(x, baseT / 2, z);
+                    railingGroup.add(plate);
+
+
+                    // 포스트(각관) - 단순 Box로 표현
+                    // 포스트는 플레이트 위에서 시작하는 느낌: y = baseT + postHeight/2
+                    const post = makePostBox(postHeight, postW, postH, 0x444444);
+                    post.position.set(x, baseT + postHeight / 2, z);
+                    railingGroup.add(post);
+                }
+            }
+
+            // 2) 섹션별 가로재 + 모듈
+            for (let i = 0; i < numSections; i++) {
+                const xL = postXs[i];
+                const xR = postXs[i + 1];
+
+                const sectionLen = xR - xL;
+                const center = (xL + xR) / 2;
+
+                // 상부레일: 포스트 중심-중심 길이
+                const topRailLen = sectionLen;
+
+
+                // ✅ 포스트가 꺼져도 "포스트가 있었을 자리"는 비워두기 위해 항상 postW/2 오프셋 적용
+                const leftFace = xL + postW / 2;
+                const rightFace = xR - postW / 2;
+
+
+                const innerRailLen = rightFace - leftFace;
+                if (innerRailLen > 0) {
+                    const innerRailCenter = (leftFace + rightFace) / 2;
+
+                    // 하부레일
+                    if (VIEW.showRailBot) {
+                        const rail = makeRectTube(innerRailLen, railW, railH, THEME.all);
+                        rail.position.set(innerRailCenter, yBotRailCenter, z);
+                        railingGroup.add(rail);
+                    }
+
+                    // 중간레일
+                    if (VIEW.showRailMid) {
+                        const rail = makeRectTube(innerRailLen, railW, railH, THEME.all);
+                        rail.position.set(innerRailCenter, yMidRailCenter, z);
+                        railingGroup.add(rail);
+                    }
+                }
+
+                if (VIEW.showSlats) {
+                    const innerX0 = leftFace;
+                    const innerLen = rightFace - leftFace;
+                    const cut = (barT / 2); // 모듈 끝단 여유 최소
+
+                    addRectFrameModulesCentered({
+                        innerX0, innerLen, cut,
+                        yTop: moduleAreaTop, yBot: moduleAreaBot,
+                        z, moduleW, moduleH, moduleGap, barW, barT,
+                        color: 0x999999
+                    });
+                }
+
+
+                // 상부레일
+                if (VIEW.showRailTop) {
+                    const rail = makeRectTube(topRailLen, railW, railH, THEME.all);
+                    rail.position.set(center, yTopRailCenter, z);
+                    railingGroup.add(rail);
+                }
+            }
+
+            // 컬러 적용
+            applyColorToGroup(railingGroup, THEME.all);
+        }
+
+        // ====== resize / animate ======
+        window.addEventListener('resize', () => {
+            camera.aspect = (window.innerWidth - 320) / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth - 320, window.innerHeight);
+            const topbar = document.querySelector('.topbar');
+            if (topbar) topbar.style.left = '320px';
+        });
+
+        init();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
+</body>
+
+</html>
