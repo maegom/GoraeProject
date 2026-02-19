@@ -1,4 +1,4 @@
-<!-- index.html (post-double-rail-rectframe) -->
+<!-- railings/post-double-rail-rectframe/index.html -->
 <!DOCTYPE html>
 <html lang="ko">
 
@@ -10,30 +10,80 @@
   <link rel="stylesheet" href="../../shared/css/app.css" />
 
   <style>
+    :root {
+      --leftW: 320px;
+      --rightW: 360px;
+      --topbarH: 56px;
+      --edgeGap: 0px;
+      /* 패널과 버튼 사이 간격 (0이면 딱 붙음) */
+      --edgeOverlap: 0px;
+      /* 버튼을 패널 쪽으로 얼마나 겹칠지 (+면 더 안쪽) */
+    }
+
     body {
       margin: 0;
       display: flex;
       font-family: 'Pretendard', sans-serif;
       background: #f8f9fa;
       color: #333;
+      min-height: 100vh;
     }
 
     #sidebar {
-      width: 320px;
+      width: var(--leftW);
+      flex: 0 0 var(--leftW);
+      flex-shrink: 0;
+
       padding: 18px 18px 22px;
       background: #fff;
       height: 100vh;
       overflow-y: auto;
       box-shadow: 2px 0 15px rgba(0, 0, 0, .05);
       z-index: 100;
+      box-sizing: border-box;
     }
 
+
+    /* ===== Canvas ===== */
     #canvas-container {
-      flex-grow: 1;
+      flex: 1 1 auto;
+      /* 가운데만 늘고 줄게 */
+      min-width: 0;
+      /* overflow 방지 */
       position: relative;
       background: #eee;
+      padding-top: var(--topbarH);
     }
 
+
+    /* ===== Right quote panel ===== */
+    #quote-panel {
+      width: var(--rightW);
+      flex: 0 0 var(--rightW);
+      flex-shrink: 0;
+
+      padding: 18px 18px 22px;
+      background: #fff;
+      height: 100vh;
+      overflow-y: auto;
+      box-shadow: -2px 0 15px rgba(0, 0, 0, .05);
+      z-index: 100;
+      border-left: 1px solid #eef1f4;
+      box-sizing: border-box;
+    }
+
+
+    /* ===== Topbar ===== */
+    header.topbar {
+      position: fixed;
+      left: var(--leftW);
+      right: var(--rightW);
+      top: 0;
+      height: var(--topbarH);
+      z-index: 250;
+    }
+
+    /* ===== inputs ===== */
     .input-group {
       margin-bottom: 16px;
     }
@@ -214,12 +264,139 @@
       color: #888;
       line-height: 1.5;
       margin-top: 10px;
+      word-break: break-word;
+    }
+
+    /* ===== Quote panel header ===== */
+    .quote-head {
+      margin-bottom: 12px;
+    }
+
+    .quote-title {
+      font-size: 16px;
+      font-weight: 900;
+      margin: 8px 0 2px;
+    }
+
+    .quote-sub {
+      font-size: 12px;
+      color: #777;
+      margin: 0 0 10px;
+      line-height: 1.4;
+    }
+
+    /* ===== Edge toggle buttons (❮ ❯, 패널 옆면에 붙음) ===== */
+    .edge-toggle {
+      position: fixed;
+      top: calc(var(--topbarH) + 12px);
+      z-index: 400;
+
+      width: 30px;
+      height: 64px;
+
+      border-radius: 12px;
+      border: 1px solid #e0e0e0;
+      background: rgba(255, 255, 255, .95);
+
+      font-weight: 900;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+
+      display: grid;
+      place-items: center;
+
+      box-shadow: 0 8px 18px rgba(0, 0, 0, .08);
+      user-select: none;
+    }
+
+    /* ✅ left 패널의 오른쪽 경계에 딱 붙기 */
+    .edge-toggle.left {
+      left: calc(var(--leftW) - var(--edgeOverlap) + var(--edgeGap));
+    /*   transform: translateX(0%); */
+      /* 버튼의 오른쪽 면이 경계에 붙음 */
+    }
+
+    /* ✅ right 패널의 왼쪽 경계에 딱 붙기 */
+    .edge-toggle.right {
+      right: calc(var(--rightW) - var(--edgeOverlap) + var(--edgeGap));
+/*       transform: translateX(100%); */
+      /* 버튼의 왼쪽 면이 경계에 붙음 */
+    }
+
+
+    body.left-collapsed .edge-toggle.left {
+      left: 0;
+      transform: translateX(0);
+      /* 화면 왼쪽에 붙음 */
+    }
+
+    body.right-collapsed .edge-toggle.right {
+      right: 0;
+      transform: translateX(0);
+      /* 화면 오른쪽에 붙음 */
+    }
+
+
+    /* ===== Collapsed states: 패널 폭 자체를 0으로 ===== */
+    body.left-collapsed {
+      --leftW: 0px;
+    }
+
+    body.right-collapsed {
+      --rightW: 0px;
+    }
+
+    /* 접힐 때 내용/패딩/그림자 정리 */
+    body.left-collapsed #sidebar {
+      width: 0 !important;
+      flex-basis: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      overflow: hidden !important;
+      box-shadow: none !important;
+    }
+
+    body.right-collapsed #quote-panel {
+      width: 0 !important;
+      flex-basis: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      overflow: hidden !important;
+      box-shadow: none !important;
+    }
+
+    /* topbar도 같이 확장 */
+    body.left-collapsed header.topbar {
+      left: 0 !important;
+    }
+
+    body.right-collapsed header.topbar {
+      right: 0 !important;
+    }
+
+    /* 둘 다 접히면 topbar는 전체 */
+    body.left-collapsed.right-collapsed header.topbar {
+      left: 0 !important;
+      right: 0 !important;
+    }
+
+    #sidebar,
+    #quote-panel,
+    header.topbar {
+      transition: width .18s ease, left .18s ease, right .18s ease, padding .18s ease;
+    }
+
+
+    /* 호버 */
+    .edge-toggle:hover {
+      background: #fff;
     }
   </style>
 </head>
 
 <body>
-  <header class="topbar" style="position:fixed; left:320px; right:0; top:0;">
+  <header class="topbar">
     <a class="brand" href="#" id="brandLink">고래이음</a>
     <nav class="nav">
       <a href="#" id="homeLink">Home</a>
@@ -227,6 +404,7 @@
     </nav>
   </header>
 
+  <!-- LEFT: settings -->
   <aside id="sidebar">
     <div class="badge">Railing / Post + Double Rail + RectFrame</div>
     <div class="pageTitle">각관-평철 이중모듈 난간</div>
@@ -243,7 +421,6 @@
       </summary>
 
       <div class="acc-body">
-        <!-- 색 + 사람 토글 -->
         <div class="input-group" style="margin-top:0;">
           <label>색상 / 사람</label>
           <div style="display:flex; gap:10px; align-items:center;">
@@ -252,7 +429,6 @@
           </div>
         </div>
 
-        <!-- 단계 -->
         <div class="step-box" style="margin-top:10px;">
           <span>단계</span>
           <span class="step-pill" id="buildStepLabel">0 / 5</span>
@@ -264,7 +440,6 @@
           <button id="btnStepReset" class="btn-mini" type="button">Reset</button>
         </div>
 
-        <!-- ON/OFF 토글 -->
         <div class="btn-row" style="margin-top:12px;">
           <button id="btnPosts" class="btn-mini on" type="button">포스트 ON</button>
           <button id="btnRailBot" class="btn-mini on" type="button">하부레일 ON</button>
@@ -391,9 +566,37 @@
     </div>
   </aside>
 
-  <main id="canvas-container" style="padding-top:56px;">
+  <!-- CENTER: canvas -->
+  <main id="canvas-container">
     <div id="loading" class="loading-overlay">모델 데이터를 불러오는 중...</div>
   </main>
+
+  <!-- RIGHT: quote -->
+  <aside id="quote-panel" aria-label="견적 패널">
+    <div class="quote-head">
+      <div class="quote-title">견적</div>
+      <div class="quote-sub">설정값 변경 시 자동으로 재산출됩니다.</div>
+    </div>
+
+    <div class="acc-body" style="padding:0;">
+      <div class="btn-row">
+        <button id="btnQuote" class="btn-mini on" type="button">견적 계산</button>
+      </div>
+
+      <div class="step-box" style="margin-top:10px;">
+        <span>총액(VAT포함)</span>
+        <span class="step-pill" id="quoteTotal">-</span>
+      </div>
+
+      <div class="tiny-help" id="quoteBreakdown" style="margin-top:10px;"></div>
+      <div class="tiny-help" id="quoteBOM" style="margin-top:10px;"></div>
+    </div>
+  </aside>
+
+  <!-- Panel edge toggle buttons (붙는 탭 스타일) -->
+  <button id="btnToggleLeft" class="edge-toggle left" type="button" aria-label="왼쪽 패널 토글">❮</button>
+  <button id="btnToggleRight" class="edge-toggle right" type="button" aria-label="오른쪽 패널 토글">❯</button>
+
 
   <!-- three core -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -401,13 +604,56 @@
   <!-- three examples (non-module) -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-  <!-- VRButton 필요(우리 vr.js는 자체 버튼도 쓰지만, 안전하게 VRButton도 로드) -->
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/webxr/VRButton.js"></script>
 
   <!-- split scripts -->
-  <!-- 경로는 너의 폴더 구조에 맞게: 예) ./js/app.js, ./js/vr.js -->
   <script src="./js/app.js"></script>
   <script src="./js/vr.js"></script>
+
+  <!-- shared quote modules -->
+  <script src="../../shared/quote/quote-core.js"></script>
+  <script src="../../shared/quote/quote-ui.js"></script>
+
+  <!-- model quote logic -->
+  <script src="./js/quote-model.js"></script>
+
+  <!-- panel toggle logic -->
+  <script>
+    (() => {
+      const btnL = document.getElementById('btnToggleLeft');
+      const btnR = document.getElementById('btnToggleRight');
+
+      function syncIcons() {
+        const leftCollapsed = document.body.classList.contains('left-collapsed');
+        const rightCollapsed = document.body.classList.contains('right-collapsed');
+
+        // ✅ 왼쪽 UI
+        // 펼쳐져 있으면 "접기" 방향 = ❮
+        // 접혀 있으면 "펼치기" 방향 = ❯
+        btnL.textContent = leftCollapsed ? '❯' : '❮';
+
+        // ✅ 오른쪽 UI
+        // 펼쳐져 있으면 "접기" 방향 = ❯
+        // 접혀 있으면 "펼치기" 방향 = ❮
+        btnR.textContent = rightCollapsed ? '❮' : '❯';
+      }
+
+      btnL.addEventListener('click', () => {
+        document.body.classList.toggle('left-collapsed');
+        syncIcons();
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      btnR.addEventListener('click', () => {
+        document.body.classList.toggle('right-collapsed');
+        syncIcons();
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      syncIcons();
+    })();
+  </script>
+
 </body>
 
 </html>
