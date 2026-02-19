@@ -129,13 +129,22 @@
     };
   }
 
-  // 공통 UI 바인딩
-  window.addEventListener("DOMContentLoaded", () => {
-    QuoteUI.bind({
-      sheetUrls: SHEET_URLS,
-      model_code: MODEL,
-      readInputs,
-      calcQuote,
-    });
+  function bindQuoteNow() {
+  if (!window.QuoteUI || !window.QuoteCore) return false;
+
+  QuoteUI.bind({
+    sheetUrls: SHEET_URLS,
+    model_code: MODEL,
+    readInputs,
+    calcQuote,
   });
+  console.log("[quote] bind OK");
+  return true;
+}
+
+// DOM이 이미 준비됐으면 즉시, 아니면 준비되면 실행
+if (!bindQuoteNow()) {
+  window.addEventListener("DOMContentLoaded", bindQuoteNow, { once: true });
+}
+
 })();
