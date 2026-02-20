@@ -392,6 +392,21 @@
     .edge-toggle:hover {
       background: #fff;
     }
+
+    /* ✅ 링크(a)도 btn-mini 버튼처럼 */
+    a.btn-mini {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+
+    /* ✅ 견적 패널 구분선 */
+.quote-divider {
+  border: 0;
+  border-top: 1px solid #e9ecef;
+  margin: 14px 0 12px;
+}
   </style>
 </head>
 
@@ -578,10 +593,12 @@
       <div class="quote-sub">설정값 변경 시 자동으로 재산출됩니다.</div>
     </div>
 
-    <div class="acc-body" style="padding:0;">
-      <div class="btn-row">
-        <button id="btnQuote" class="btn-mini on" type="button">견적 계산</button>
-      </div>
+   <div class="btn-row">
+  <button id="btnQuote" class="btn-mini on" type="button">견적 계산</button>
+  <button id="btnQuotePdf" class="btn-mini" type="button" style="display:none;">
+    견적서 PDF 다운로드
+  </button>
+</div>
 
       <div class="step-box" style="margin-top:10px;">
         <span>총액(VAT포함)</span>
@@ -591,11 +608,19 @@
       <div class="tiny-help" id="quoteBreakdown" style="margin-top:10px;"></div>
       <div class="tiny-help" id="quoteBOM" style="margin-top:10px;"></div>
 
-      <div class="btn-row" style="margin-top:12px;">
-        <button id="btnQuotePdf" class="btn-mini" type="button" style="display:none;">
-          견적서 PDF 다운로드
-        </button>
-      </div>
+<hr class="quote-divider" />
+
+<div class="btn-row" style="margin-top:0;">
+  <a id="btnShopLink"
+     class="btn-mini"
+     href="https://goraeeum.cafe24.com/product/%EB%9D%BC%EC%9A%B4%EB%93%9C-%EC%8A%A4%ED%83%A0%EB%8B%A4%EB%93%9C-%ED%95%B8%EB%93%9C%EB%A0%88%EC%9D%BC-hr-rs-001/49/category/59/display/1/"
+     target="_blank"
+     rel="noopener">
+    구매 쇼핑몰 이동
+  </a>
+</div>
+
+   
 
 
     </div>
@@ -614,20 +639,20 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/webxr/VRButton.js"></script>
 
-  
+
   <!-- split scripts -->
   <script src="./js/app.js"></script>
   <script src="./js/vr.js"></script>
 
-<!-- PDF 생성 (jsPDF) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- PDF 생성 (jsPDF) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="../../shared/quote/fonts/Pretendard-Regular.base64.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="../../shared/quote/fonts/Pretendard-Regular.base64.js"></script>
 
-<script src="../../shared/quote/quote-core.js"></script>
-<script src="../../shared/quote/quote-ui.js"></script>
-<script src="./js/quote-model.js"></script>
+  <script src="../../shared/quote/quote-core.js"></script>
+  <script src="../../shared/quote/quote-ui.js"></script>
+  <script src="./js/quote-model.js"></script>
 
 
   <!-- shared quote modules -->
