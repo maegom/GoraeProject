@@ -1,0 +1,643 @@
+<!-- rail-insert-rectframe/index.html -->
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>레일 삽입형 ㅒ 모듈 난간 | 고래이음 난간 시뮬레이터</title>
+
+  <link rel="stylesheet" href="../../shared/css/app.css" />
+
+  <style>
+    :root {
+      --leftW: 320px;
+      --rightW: 360px;
+      --topbarH: 56px;
+      --edgeGap: 0px;
+      --edgeOverlap: 0px;
+    }
+
+    body {
+      margin: 0;
+      display: flex;
+      font-family: 'Pretendard', sans-serif;
+      background: #f8f9fa;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    #sidebar {
+      width: var(--leftW);
+      flex: 0 0 var(--leftW);
+      flex-shrink: 0;
+      padding: 18px 18px 22px;
+      background: #fff;
+      height: 100vh;
+      overflow-y: auto;
+      box-shadow: 2px 0 15px rgba(0, 0, 0, .05);
+      z-index: 100;
+      box-sizing: border-box;
+    }
+
+    #canvas-container {
+      flex: 1 1 auto;
+      min-width: 0;
+      position: relative;
+      background: #eee;
+      padding-top: var(--topbarH);
+    }
+
+    #quote-panel {
+      width: var(--rightW);
+      flex: 0 0 var(--rightW);
+      flex-shrink: 0;
+      padding: 18px 18px 22px;
+      background: #fff;
+      height: 100vh;
+      overflow-y: auto;
+      box-shadow: -2px 0 15px rgba(0, 0, 0, .05);
+      z-index: 100;
+      border-left: 1px solid #eef1f4;
+      box-sizing: border-box;
+    }
+
+    header.topbar {
+      position: fixed;
+      left: var(--leftW);
+      right: var(--rightW);
+      top: 0;
+      height: var(--topbarH);
+      z-index: 250;
+    }
+
+    .input-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+
+    input[type="number"]:focus {
+      border-color: #007bff;
+      outline: none;
+    }
+
+
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      box-sizing: border-box;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    .ui-divider {
+      border: 0;
+      border-top: 1px solid #e9ecef;
+      margin: 10px 0;
+    }
+
+    .pageTitle {
+      font-size: 16px;
+      font-weight: 900;
+      margin: 8px 0 4px;
+    }
+
+    .pageSub {
+      font-size: 12px;
+      color: #777;
+      margin: 0 0 14px;
+      line-height: 1.5;
+    }
+
+    .row2 {
+      display: flex;
+      gap: 8px;
+    }
+
+    .row2 input {
+      width: 50%;
+    }
+
+    .info-box {
+      font-size: 11px;
+      color: #888;
+      line-height: 1.6;
+      background: #f1f3f5;
+      padding: 10px;
+      border-radius: 10px;
+      margin-top: 14px;
+    }
+
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, .82);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 200;
+      visibility: hidden;
+      font-weight: 900;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 900;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #f1f3f5;
+      color: #495057;
+      margin-top: 8px;
+    }
+
+    .acc {
+      border: 1px solid #e9ecef;
+      border-radius: 12px;
+      background: #fff;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+
+    .acc>summary {
+      list-style: none;
+      cursor: pointer;
+      user-select: none;
+      padding: 12px 12px;
+      font-size: 13px;
+      font-weight: 900;
+      color: #343a40;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #f8f9fa;
+      border-bottom: 1px solid #eef1f4;
+    }
+
+    .acc>summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .acc>summary .chev {
+      font-weight: 900;
+      color: #868e96;
+      transform: rotate(0deg);
+      transition: transform .15s ease;
+    }
+
+    .acc[open]>summary .chev {
+      transform: rotate(90deg);
+    }
+
+    .acc-body {
+      padding: 12px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-mini {
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid #e0e0e0;
+      background: #f3f5f7;
+      color: #222;
+      font-weight: 900;
+      cursor: pointer;
+      user-select: none;
+      flex: 1;
+      min-width: 88px;
+    }
+
+    .btn-mini.on {
+      background: #e7f1ff;
+      border-color: #a8ccff;
+      color: #0b57d0;
+    }
+
+    .step-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f1f3f5;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #495057;
+      font-weight: 900;
+    }
+
+    .step-pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid #e9ecef;
+      color: #0b57d0;
+      font-weight: 900;
+      font-size: 12px;
+      min-width: 56px;
+      text-align: center;
+    }
+
+    .tiny-help {
+      font-size: 11px;
+      color: #888;
+      line-height: 1.5;
+      margin-top: 10px;
+      word-break: break-word;
+    }
+
+    .quote-head {
+      margin-bottom: 12px;
+    }
+
+    .quote-title {
+      font-size: 16px;
+      font-weight: 900;
+      margin: 8px 0 2px;
+    }
+
+    .quote-sub {
+      font-size: 12px;
+      color: #777;
+      margin: 0 0 10px;
+      line-height: 1.4;
+    }
+
+    .edge-toggle {
+      position: fixed;
+      top: calc(var(--topbarH) + 12px);
+      z-index: 400;
+      width: 30px;
+      height: 64px;
+      border-radius: 12px;
+      border: 1px solid #e0e0e0;
+      background: rgba(255, 255, 255, .95);
+      font-weight: 900;
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, .08);
+      user-select: none;
+    }
+
+    .edge-toggle.left {
+      left: calc(var(--leftW) - var(--edgeOverlap) + var(--edgeGap));
+    }
+
+    .edge-toggle.right {
+      right: calc(var(--rightW) - var(--edgeOverlap) + var(--edgeGap));
+    }
+
+    body.left-collapsed .edge-toggle.left {
+      left: 0;
+    }
+
+    body.right-collapsed .edge-toggle.right {
+      right: 0;
+    }
+
+    body.left-collapsed {
+      --leftW: 0px;
+    }
+
+    body.right-collapsed {
+      --rightW: 0px;
+    }
+
+    body.left-collapsed #sidebar {
+      width: 0 !important;
+      flex-basis: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      overflow: hidden !important;
+      box-shadow: none !important;
+    }
+
+    body.right-collapsed #quote-panel {
+      width: 0 !important;
+      flex-basis: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      overflow: hidden !important;
+      box-shadow: none !important;
+    }
+
+    body.left-collapsed header.topbar {
+      left: 0 !important;
+    }
+
+    body.right-collapsed header.topbar {
+      right: 0 !important;
+    }
+
+    body.left-collapsed.right-collapsed header.topbar {
+      left: 0 !important;
+      right: 0 !important;
+    }
+
+    #sidebar,
+    #quote-panel,
+    header.topbar {
+      transition: width .18s ease, left .18s ease, right .18s ease, padding .18s ease;
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <a class="brand" href="https://goraeeum.cafe24.com/" id="brandLink">고래이음</a>
+    <nav class="nav">
+      <a href="https://goraeeum.cafe24.com/" id="homeLink">Home</a>
+      <a class="active" href="../">Back</a>
+    </nav>
+  </header>
+
+  <aside id="sidebar">
+    <div class="badge">Railing / Rail Insert / Ladder(ㅒ) Module</div>
+    <div class="pageTitle">레일 삽입형 ㅒ 모듈 난간</div>
+    <p class="pageSub">
+      상·하부 각파이프 레일 + 평철 ㅒ 모듈(세로2 + 가로2).<br />
+      모듈 간격은 <b>평철 중심 간격</b>으로 균등 배치되며, 섹션 중앙 기준으로 자동 정렬됩니다.
+    </p>
+
+    <details class="acc" open>
+      <summary>
+        <span>1. 보기 및 공정</span>
+        <span class="chev">›</span>
+      </summary>
+      <div class="acc-body">
+        <div class="input-group" style="margin-top:0;">
+  <label>배경(HDRI)</label>
+
+  <div class="btn-row">
+    <button id="btnHdri" class="btn-mini on" type="button">HDRI ON</button>
+    <button id="btnHdriBg" class="btn-mini" type="button">배경 OFF</button>
+  </div>
+
+  <div style="margin-top:10px;">
+    <select id="hdriSelect">
+      <option value="../../shared/env/paul_lobe_haus_4k.hdr" selected>Studio</option>
+      <option value="../../shared/env/venice_sunset_1k.hdr">Sunset (venice_sunset_1k.hdr)</option>
+      <option value="../../shared/env/royal_esplanade_1k.hdr">Outdoor (royal_esplanade_1k.hdr)</option>
+      <option value="../../shared/env/warehouse_01_1k.hdr">Warehouse (warehouse_01_1k.hdr)</option>
+    </select>
+  </div>
+
+  <div class="tiny-help" id="hdriStatus" style="margin-top:8px;">HDRI: ON</div>
+</div>
+
+<hr class="ui-divider">
+
+<div class="input-group" style="margin-top:0;">
+  <label>색상</label>
+  <div style="display:flex; gap:10px; align-items:center;">
+    <input type="color" id="allColor" value="#666666" style="flex:1; height:42px;" />
+    <button id="btnHuman" class="btn-mini on" type="button" style="flex:0; min-width:110px;">사람 ON</button>
+  </div>
+</div>
+
+<hr class="ui-divider">
+
+        <div class="step-box">
+          <span>단계</span>
+          <span class="step-pill" id="buildStepLabel">0 / 3</span>
+        </div>
+
+        <div class="btn-row" style="margin-top:10px;">
+          <button id="btnStepPrev" class="btn-mini" type="button">Prev</button>
+          <button id="btnStepNext" class="btn-mini" type="button">Next</button>
+          <button id="btnStepReset" class="btn-mini" type="button">Reset</button>
+        </div>
+
+        <div class="btn-row" style="margin-top:12px;">
+          <button id="btnPosts" class="btn-mini on" type="button">포스트 ON</button>
+          <button id="btnRails" class="btn-mini on" type="button">레일 ON</button>
+          <button id="btnModules" class="btn-mini on" type="button">ㅒ모듈 ON</button>
+        </div>
+
+        <div class="tiny-help">
+          단계(0~3): 0=없음 → 1=포스트 → 2=레일 → 3=ㅒ모듈
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>
+        <span>2. 전체 설정</span>
+        <span class="chev">›</span>
+      </summary>
+      <div class="acc-body">
+        <div class="input-group">
+          <label>전체 길이 (mm)</label>
+          <input type="number" id="totalL" value="3000">
+        </div>
+        <div class="input-group">
+          <label>난간 높이 (mm)</label>
+          <input type="number" id="height" value="1200">
+        </div>
+        <div class="input-group">
+          <label>포스트 간격 (mm)</label>
+          <input type="number" id="postInt" value="1000">
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>
+        <span>3. 포스트</span>
+        <span class="chev">›</span>
+      </summary>
+      <div class="acc-body">
+        <div class="input-group">
+          <label>포스트 각관 W/H (mm)</label>
+          <div class="row2">
+            <input type="number" id="postW" value="50" title="포스트 폭(X)">
+            <input type="number" id="postD" value="50" title="포스트 깊이(Z)">
+          </div>
+        </div>
+        <div class="input-group">
+          <label>베이스플레이트 W/D (mm)</label>
+          <div class="row2">
+            <input type="number" id="basePlateW" value="200">
+            <input type="number" id="basePlateD" value="120">
+          </div>
+        </div>
+        <div class="input-group">
+          <label>베이스플레이트 두께 (mm)</label>
+          <input type="number" id="basePlateT" value="10">
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>
+        <span>4. 레일(각파이프)</span>
+        <span class="chev">›</span>
+      </summary>
+      <div class="acc-body">
+        <div class="input-group">
+          <label>레일 각파이프 W/H (mm) <span style="font-weight:400;">(예: 50×30)</span></label>
+          <div class="row2">
+            <input type="number" id="railW" value="50" title="레일 폭(Z)">
+            <input type="number" id="railH" value="30" title="레일 높이(Y)">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>상부 레일 상단 여유 (mm)</label>
+          <input type="number" id="topRailTopClear" value="300">
+        </div>
+
+        <div class="tiny-help">
+          포스트 높이(자동): <b id="postHAuto">-</b>
+        </div>
+
+        <div class="input-group">
+          <label>하부 레일 하단 여유 (mm) <span style="font-weight:400;">(모듈 하단 기준)</span></label>
+          <input type="number" id="botRailBotClear" value="100">
+        </div>
+      </div>
+    </details>
+
+    <details class="acc">
+      <summary>
+        <span>5. ㅒ 모듈(평철)</span>
+        <span class="chev">›</span>
+      </summary>
+      <div class="acc-body">
+        <div class="input-group">
+          <label>모듈 길이 (mm) <span style="font-weight:400;">(난간 높이에서 아래로)</span></label>
+          <input type="number" id="moduleLen" value="1130">
+        </div>
+
+        <div class="input-group">
+          <label>세로 평철 폭 / 두께 (mm)</label>
+          <div class="row2">
+            <input type="number" id="barW" value="50" title="세로평철 폭(Z)">
+            <input type="number" id="barT" value="6" title="평철 두께(X)">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>평철 중심 간격 (mm) <span style="font-weight:400;">(모듈/모듈 포함)</span></label>
+          <input type="number" id="barPitch" value="100">
+        </div>
+
+        <div class="input-group">
+          <label>레일 삽입 깊이 (mm) <span style="font-weight:400;">(세로재만 이동)</span></label>
+          <input type="number" id="insertDepth" value="0">
+        </div>
+
+        <div class="tiny-help">
+          * 가로 평철(2개)은 <b>세워져</b> 있으며, 레일 전면에 고정(삽입깊이 영향 없음)<br>
+          * 세로 평철(2개)은 삽입깊이에 따라 레일 쪽으로 들어갑니다.
+        </div>
+      </div>
+    </details>
+
+    <div class="info-box">
+      * 상부 레일: 길이=포스트 중심-중심 / 포스트 상단에 붙음<br>
+      * 하부 레일: 길이=포스트 사이(내측)<br>
+      * 상부레일 상단 여유: 난간높이에서 내려온 거리(상부레일 윗면 기준)<br>
+      * 하부레일 하단 여유: 모듈 하단에서 올라온 거리(하부레일 아랫면 기준)
+    </div>
+  </aside>
+
+  <main id="canvas-container">
+    <div id="loading" class="loading-overlay">모델 데이터를 불러오는 중...</div>
+  </main>
+
+  <aside id="quote-panel" aria-label="견적 패널">
+    <div class="quote-head">
+      <div class="quote-title">견적</div>
+      <div class="quote-sub">설정값 변경 시 자동 재산출 (연결된 시트 기준)</div>
+    </div>
+
+    <div class="btn-row">
+      <button id="btnQuote" class="btn-mini on" type="button">견적 계산</button>
+      <button id="btnQuotePdf" class="btn-mini" type="button" style="display:none;">견적서 PDF</button>
+    </div>
+
+    <div class="step-box" style="margin-top:10px;">
+      <span>총액(VAT포함)</span>
+      <span class="step-pill" id="quoteTotal">-</span>
+    </div>
+
+    <div class="tiny-help" id="quoteBreakdown" style="margin-top:10px;"></div>
+    <div class="tiny-help" id="quoteBOM" style="margin-top:10px;"></div>
+  </aside>
+
+  <button id="btnToggleLeft" class="edge-toggle left" type="button" aria-label="왼쪽 패널 토글">❮</button>
+  <button id="btnToggleRight" class="edge-toggle right" type="button" aria-label="오른쪽 패널 토글">❯</button>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/webxr/VRButton.js"></script>
+
+  <script src="./js/app.js"></script>
+  <script src="./js/vr.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="../../shared/quote/fonts/Pretendard-Regular.base64.js"></script>
+  <script src="../../shared/quote/quote-core.js"></script>
+  <script src="../../shared/quote/quote-ui.js"></script>
+  <script src="./js/quote-model.js"></script>
+
+  <script>
+    (() => {
+      const btnL = document.getElementById('btnToggleLeft');
+      const btnR = document.getElementById('btnToggleRight');
+
+      function syncIcons() {
+        const leftCollapsed = document.body.classList.contains('left-collapsed');
+        const rightCollapsed = document.body.classList.contains('right-collapsed');
+        btnL.textContent = leftCollapsed ? '❯' : '❮';
+        btnR.textContent = rightCollapsed ? '❮' : '❯';
+      }
+
+      btnL.addEventListener('click', () => {
+        document.body.classList.toggle('left-collapsed');
+        syncIcons();
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      btnR.addEventListener('click', () => {
+        document.body.classList.toggle('right-collapsed');
+        syncIcons();
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      syncIcons();
+    })();
+  </script>
+</body>
+
+</html>
